@@ -64,6 +64,7 @@ class Board:
   # inferences
 
   # put black squares between distinct white regions
+  # test hori and vert pairs
   def create_fences(self, region):
     for cell in region.members:
       for nbor in self.neighbors(cell):
