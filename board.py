@@ -1,11 +1,13 @@
+from board_display import *
 
 class Cell:
-  def __init__(self, x, y, color):
+  def __init__(self, x, y, color, label=''):
     self.x = x
     self.y = y
-    self.color = color
+    self.color = color     # 0-unknown 1-white 2-black
+    self.label = str(label)
     self.region = None
-    # 0-unknown 1-white 2-black
+
 
   def __repr__(self):
     #return f'C[{self.x},{self.y}]-{self.color}-{int(bool(self.region))}'
@@ -33,7 +35,7 @@ class Board:
         if size == 0:
           self.cells[(x,y)] = Cell(x, y, 0)
         else:
-          newCell = Cell(x, y, 1)
+          newCell = Cell(x, y, 1, label=size)
           newRegion = Region(1, newCell, size)
           self.cells[(x,y)] = newCell
           self.regions.append(newRegion)
@@ -54,7 +56,14 @@ class Board:
       for x in range(self.width):
         l[y].append(self.cells[(x,y)].color)
     return l
+
+  def __str__(self):
+    return '\n'.join([str(row) for row in self._get_list_form()])
+
+  def show(self):
+    show_board(self)
   
+
   def is_solved(self):
     for cell in self.cells.values():
       if cell.color == 0:
@@ -76,6 +85,8 @@ class Board:
     new_region = Region(color, cell)
     cell.region = new_region
     cell.color = color
+    if color == 1:
+      cell.label = u"\u22C5"    # dot operator
     for nbor_region in [nbor.region for nbor in self.neighbors(cell) if nbor.region is not None and nbor.color == color]:
       self.annex(new_region, nbor_region)
   
@@ -103,9 +114,6 @@ class Board:
         for path in self.find_paths(nbor, end, used, color):
           paths.append([start]+path)
       return paths
-  
-  def __str__(self):
-    return '\n'.join([str(row) for row in self._get_list_form()])
 
 
 
@@ -181,6 +189,6 @@ if __name__ == '__main__':
           [3, 0, 0, 0, 0]
         ]
     b = Board()
-    print(b.build(grid).solve())
+    b.build(grid).solve().show()
 
 
