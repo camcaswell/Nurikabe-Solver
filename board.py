@@ -37,6 +37,7 @@ class Board:
           newRegion = Region(1, newCell, size)
           self.cells[(x,y)] = newCell
           self.regions.append(newRegion)
+    return self
 
   def manual_build(self, cell_colors):
     self.height = len(cell_colors)
@@ -44,6 +45,7 @@ class Board:
     for y, row in enumerate(cell_colors):
       for x, color in enumerate(row):
         self.cells[(x,y)] = Cell(x, y, color)
+    return self
 
   def _get_list_form(self):
     l = []
@@ -54,7 +56,7 @@ class Board:
     return l
   
   def is_solved(self):
-    for cell in self.cells.items():
+    for cell in self.cells.values():
       if cell.color == 0:
         return False
     return True
@@ -74,16 +76,14 @@ class Board:
     new_region = Region(color, cell)
     cell.region = new_region
     cell.color = color
-    for nbor_region in [nbor.region for nbor in self.neighbors(cell) if nbor.region is not None]:
+    for nbor_region in [nbor.region for nbor in self.neighbors(cell) if nbor.region is not None and nbor.color == color]:
       self.annex(new_region, nbor_region)
-
-
   
   def neighbors(self, cell, d=1, interior=False):
       if d<1:
         return set()
       coords = {(cell.x+(n1*(d-i)), cell.y+(n2*i)) for i in range(d+1) for n1 in (1,-1) for n2 in (1,-1)}
-      nbors = {self.cells[pos] for pos in nbors if 0<=pos[0]<self.width and 0<=pos[1]<self.height}
+      nbors = {self.cells[pos] for pos in coords if 0<=pos[0]<self.width and 0<=pos[1]<self.height}
       if interior:
         nbors = nbors.union(self.neighbors(cell, d-1, True))
       return nbors
@@ -105,29 +105,32 @@ class Board:
       return paths
   
   def __str__(self):
-    return str(self._get_list_form())
+    return '\n'.join([str(row) for row in self._get_list_form()])
 
 
 
   # inferences
 
   # put black squares between distinct white regions
-  def create_fences(self, region):
-    for cell in region.members:
-      for potention_fence in self.neighbors(cell, 1):
-        if potential_fence.color == 0:
-          for nbor in self.neighbors(potential_fence, 1):
-            if nbor.color == 1 and nbor.region and nbor.region != region:
-              self.set_color(potential_fence, 2)
-              return True
+  def create_fences(self):
+    for region in self.regions:
+      for cell in region.members:
+        for potential_fence in self.neighbors(cell, 1):
+          if potential_fence.color == 0:
+            for nbor in self.neighbors(potential_fence, 1):
+              if nbor.color == 1 and nbor.region and nbor.region != region:
+                self.set_color(potential_fence, 2)
+                #return True
     return False
 
 
 
   def solve(self):
-    while not board.is_solved():
+    while not self.is_solved():
       # apply inferences
-      pass
+      self.create_fences()
+      break
+    return self
 
 
 
@@ -172,14 +175,12 @@ def main():
 if __name__ == '__main__':
     grid = [
           [0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0],
+          [0, 0, 4, 0, 0],
           [3, 0, 0, 2, 0],
           [0, 0, 0, 0, 1],
           [3, 0, 0, 0, 0]
         ]
     b = Board()
-    b.build(grid)
-    c = b.cells[(0,1)]
-    print(b.neighbors(c,3).union(b.neighbors(c,2)))
+    print(b.build(grid).solve())
 
 
