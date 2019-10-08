@@ -13,7 +13,7 @@ class Cell:
 
 
 class Region:
-  def __init__(self, size, color, firstMember):
+  def __init__(self, color, firstMember, size=None):
     self.color = color
     self.size = size
     self.members = [firstMember]
@@ -29,12 +29,12 @@ class Board:
     self.height = len(grid)
     self.width = len(grid[0])
     for y, row in enumerate(grid):
-      for x, val in enumerate(row):
-        if val == 0:
+      for x, size in enumerate(row):
+        if size == 0:
           self.cells[(x,y)] = Cell(x, y, 0)
         else:
           newCell = Cell(x, y, 1)
-          newRegion = Region(val, 1, newCell)
+          newRegion = Region(1, newCell, size)
           self.cells[(x,y)] = newCell
           self.regions.append(newRegion)
 
@@ -44,10 +44,6 @@ class Board:
     for y, row in enumerate(cell_colors):
       for x, color in enumerate(row):
         self.cells[(x,y)] = Cell(x, y, color)
-  
-  def annex(self, region1, region2):
-    region1.members += region2.members
-    self.regions.remove(region2)
 
   def _get_list_form(self):
     l = []
@@ -62,17 +58,38 @@ class Board:
       if cell.color == 0:
         return False
     return True
+
+  def annex(self, region1, region2):
+    if region1.size is not None and region2.size is not None:
+      raise Exception("Cannot merge two regions with defined sizes.")
+    region1.members += region2.members
+    if region2.size is not None:
+      region1.size = region2.size
+    self.regions.remove(region2)
+
+  def set_color(self, cell, color):
+    # sets the color and annexes any newly-adjacent regions
+    if cell.color != 0:
+      raise Exception("Can only set unknown cells.")
+    new_region = Region(color, cell)
+    cell.region = new_region
+    cell.color = color
+    for nbor_region in [nbor.region for nbor in self.neighbors(cell) if nbor.region is not None]:
+      self.annex(new_region, nbor_region)
+
+
   
-  def neighbors(self, cell):
-      nbors = [(cell.x+1, cell.y),
-               (cell.x-1, cell.y),
-               (cell.x, cell.y+1),
-               (cell.x, cell.y-1)
-              ]
-      return [self.cells[coords] for coords in nbors if 0<=coords[0]<self.width and 0<=coords[1]<self.height]
+  def neighbors(self, cell, d=1, interior=False):
+      if d<1:
+        return set()
+      coords = {(cell.x+(n1*(d-i)), cell.y+(n2*i)) for i in range(d+1) for n1 in (1,-1) for n2 in (1,-1)}
+      nbors = {self.cells[pos] for pos in nbors if 0<=pos[0]<self.width and 0<=pos[1]<self.height}
+      if interior:
+        nbors = nbors.union(self.neighbors(cell, d-1, True))
+      return nbors
 
   def find_paths(self, start, end, used=[], color=None):
-    if color == None:
+    if color is None:
       color = start.color
     used = used[:]
     used.append(start)
@@ -90,21 +107,21 @@ class Board:
   def __str__(self):
     return str(self._get_list_form())
 
+
+
   # inferences
 
   # put black squares between distinct white regions
   def create_fences(self, region):
-    changeFlag = False
-    # horizontal pairs
-    for x in range(self.width-2):
-      for y in range(self.height-2):
-        cell = self.cells[(x,y)]
-        if cell.region and cell.region.color == 1:
-          potential_fence = self.cells[(x+1,y)]
-          if potentional_fence.color == 0:
-            nbor = self.cells[(x+2,y)]
-            if nbor.region and nbor.region.color == 1 and nbor.region != cell.region:
-              pass
+    for cell in region.members:
+      for potention_fence in self.neighbors(cell, 1):
+        if potential_fence.color == 0:
+          for nbor in self.neighbors(potential_fence, 1):
+            if nbor.color == 1 and nbor.region and nbor.region != region:
+              self.set_color(potential_fence, 2)
+              return True
+    return False
+
 
 
   def solve(self):
@@ -153,6 +170,16 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    grid = [
+          [0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0],
+          [3, 0, 0, 2, 0],
+          [0, 0, 0, 0, 1],
+          [3, 0, 0, 0, 0]
+        ]
+    b = Board()
+    b.build(grid)
+    c = b.cells[(0,1)]
+    print(b.neighbors(c,3).union(b.neighbors(c,2)))
 
 
