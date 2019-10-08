@@ -38,7 +38,7 @@ class Board:
           self.cells[(x,y)] = newCell
           self.regions.append(newRegion)
 
-  def manual_board(self, cell_colors):
+  def manual_build(self, cell_colors):
     self.height = len(cell_colors)
     self.width = len(cell_colors[0])
     for y, row in enumerate(cell_colors):
@@ -85,8 +85,6 @@ class Board:
       for nbor in nbors:
         for path in self.find_paths(nbor, end, used, color):
           paths.append([start]+path)
-
-      #return [[start]+path for nbor in nbors for path in self.find_paths(nbor, end, used)]
       return paths
   
   def __str__(self):
@@ -144,7 +142,7 @@ def main():
         ]
   
   b = Board()
-  b.manual_board(maze)
+  b.manual_build(maze)
   cell1 = b.cells[(3,1)]
   cell2 = b.cells[(4,3)]
   paths = b.find_paths(cell1, cell2)
