@@ -1,14 +1,15 @@
 import tkinter as tk
+import threading
 
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 800
+WINDOW_WIDTH = 400
+WINDOW_HEIGHT = 400
 WINDOW_BUFFER = 10
 LINE_WIDTH = 2
 
 class Board_Display:
-    def __init__(self, master, board):
+    def __init__(self, master, board, title):
         self.master = master
-        master.title("Nurikabe Board")
+        master.title(title)
 
         canvas = tk.Canvas(master, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         canvas.pack()
@@ -39,11 +40,11 @@ class Board_Display:
                                 )
 
 
+def show_board(board, title):
+    th = threading.Thread(target=_show_board, args=(board, title))
+    th.start()
 
-
-
-def show_board(board):
+def _show_board(board, title):
     window = tk.Tk()
-    Board_Display(window, board)
+    Board_Display(window, board, title)
     window.mainloop()
-
