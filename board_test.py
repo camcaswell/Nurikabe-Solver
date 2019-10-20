@@ -40,7 +40,7 @@ def test_is_solved_false(GRID_1):
     assert not GRID_1.is_solved(), "Test failed"
 
 
-def test_find_unreachable(GRID_1. SOL_1):
+def test_find_unreachable(GRID_1, SOL_1):
     GRID_1.find_unreachable()
     assert GRID_1 == SOL_1, "Test failed"
 
