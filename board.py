@@ -14,6 +14,9 @@ class Cell:
     #return f'C[{self.x},{self.y}]-{self.color}-{int(bool(self.region))}'
     return f'({self.x},{self.y})'
 
+  def __lt__(self, other):
+    return (self.x, self.y) < (other.x, other.y)
+
 
 class Region:
   def __init__(self, color, firstMember, size=None):
@@ -21,6 +24,9 @@ class Region:
     self.size = size
     self.members = [firstMember]
     firstMember.region = self
+
+  def __repr__(self):
+    return f'<R:{self.color}:{self.size} {sorted(self.members)}>'
 
 
 class Board:
@@ -93,7 +99,8 @@ class Board:
       for nbor in [n for n in self.neighbors(cell) if n.color==0]:
         nbor.potential_regions.discard(region2)
         nbor.potential_regions.add(region1)
-    self.regions.remove(region2)
+    self.white_regions.discard(region2)
+    self.black_regions.discard(region2)
 
   def set_color(self, cell, color):
     # sets the color and annexes any newly-adjacent regions
@@ -147,25 +154,29 @@ class Board:
           paths.append([start]+path)
       return paths
 
-  def expand_white(self, region, open_layer=None, used=set(), shell=0, depth_limit=1):
-    # expand *region* to *depth_limit* by adding successive shells of possible cells
+  def find_reach_white(self, region, open_layer=None, used=None, shell=0, depth_limit=1):
+    # find the reach of *region* to *depth_limit* by adding successive shells of possible cells
     # returns set of all cells that could belong to region
     if open_layer is None:
       open_layer = set(region.members)
-    next_open = set()
-    for cell in open_layer:
-      for nbor in self.neighbors(cell):
-        if nbor not in next_open|open_layer|used:
-          if nbor.color==0 and all([r.size is None for r in nbor.potential_regions-{region}]):       # if nbor isn't adjacent to any other regions with defined size (i.e. a separate island)
-            if sum([len(r.members) for r in nbor.potential_regions-{region}]) + shell < region.size: # if this region can annex all regions adjacent to *nbor* w/o violating its size
-              next_open.add(nbor)
-          elif nbor.color==1:   # Assuming that the region has already expanded over an unknown cell on the border, and thus checked that this white cell is OK to expand into
-            next_open.add(nbor)
-    used.update(open_layer)
-    if shell+1<depth_limit:
-      return self.expand_white(region, next_open, used, shell+1, depth_limit)
+    if used is None:
+      used = set()
+
+    if shell >= depth_limit:
+      return used|open_layer
     else:
-      return used|next_open
+      next_open = set()
+      for cell in open_layer:
+        for nbor in self.neighbors(cell):
+          if nbor not in next_open|open_layer|used:
+            if nbor.color==0 and all([r.size is None for r in nbor.potential_regions-{region}]):       # if nbor isn't adjacent to any other regions with defined size (i.e. a separate island)
+              if sum([len(r.members) for r in nbor.potential_regions-{region}]) + shell < region.size: # if this region can annex all regions adjacent to *nbor* w/o violating its size
+                next_open.add(nbor)
+            elif nbor.color==1:   # Assuming that the region has already expanded over an unknown cell on the border, and thus checked that this white cell is OK to expand into
+              next_open.add(nbor)
+      used.update(open_layer)
+      return self.find_reach_white(region, next_open, used, shell+1, depth_limit)
+
 
 
 
@@ -200,7 +211,7 @@ class Board:
   def find_unreachable(self):
     reachable = set()
     for region in [r for r in self.white_regions if r.size is not None]:
-      reachable.update(self.expand_white(region, depth_limit=region.size-len(region.members)))
+      reachable.update(self.find_reach_white(region, depth_limit=region.size-len(region.members)))
     for cell in set(self.cells.values())-reachable:
       if cell.color == 0:
         self.set_color(cell, 2)
@@ -230,10 +241,11 @@ if __name__ == '__main__':
           [3, 0, 0, 0, 0]
         ]
     b = Board()
-    b.build(grid)
-    try:
-      b.solve().show("FINISHED")
-    except Exception as err:
-      print(err)
+    b.build(grid).find_unreachable()
+    b.show()
+    # for r in b.white_regions:
+    #   print(r)
+    #   print(sorted(b.find_reach_white(r, depth_limit=r.size-1)))
+    #   print()
 
 
