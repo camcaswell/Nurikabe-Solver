@@ -1,4 +1,5 @@
 from copy import deepcopy
+from math import inf as INF
 from board_display import *
 
 class Cell:
@@ -14,10 +15,10 @@ class Cell:
 
   def __repr__(self):
     #return f'C[{self.x},{self.y}]-{self.color}-{int(bool(self.region))}'
-    return f'({self.x},{self.y})'
+    return f'C<{self.x},{self.y}>'
 
   def __lt__(self, other):
-    return (self.x, self.y) < (other.x, other.y)
+    return self.coords < other.coords
 
 
 class Region:
@@ -88,12 +89,7 @@ class Board:
     return True
 
   def annex(self, region1, region2):
-    # incorporates region2 into region 1
-
-    # print("\nRegions:")
-    # print('\n'.join([str(r.members) for r in self.regions]))
-
-
+    # merges region2 into region 1
     assert region1.size is None or region2.size is None, "Cannot merge two regions with defined sizes."
     assert region2.color == region2.color, "Cannot merge two regions of different colors."
 
@@ -111,9 +107,8 @@ class Board:
 
   def set_color(self, cell, color):
     # sets the color and annexes any newly-adjacent regions
-
     assert cell.color == 0, "Can only set unknown cells."
-    assert color in [1,2], "Can only set color to be black or white."
+    assert color in (1,2), "Can only set color to be black or white."
 
     cell.potential_regions.clear()
     new_region = Region(color, cell)
@@ -157,31 +152,30 @@ class Board:
           paths.append([start]+path)
       return paths
 
-  def find_reach_white(self, region, open_layer=None, used=None, shell=0, depth_limit=1):
+  def find_reach_white(self, region, open_layer=None, used=None, depth=0, depth_limit=None):
     # find the reach of *region* to *depth_limit* by adding successive shells of possible cells
     # returns set of all cells that could belong to region
     if open_layer is None:
-      open_layer = set(region.members)
+      open_layer = {cell:len(region.members) for cell in set(region.members)}   # the *min_req_size* for *cell* is the number of cells it would take to connect *region* to *cell*, including itself and the cells already in *region*
     if used is None:
       used = set()
+    if depth_limit is None:
+      depth_limit = region.size - len(region.members)
     # print(f'OL: {sorted(open_layer)}')
     # print(f'US: {sorted(used)}')
     # print()
-    if shell >= depth_limit:
-      return used|open_layer
+    if depth >= depth_limit:
+      return used|set(open_layer)
     else:
-      next_open = set()
-      for cell in open_layer:
-        for nbor in self.neighbors(cell):
-          if nbor not in next_open|open_layer|used:
-            if nbor.color==0 and all([r.size is None for r in nbor.potential_regions-{region}]):       # if nbor isn't adjacent to any other regions with defined size (i.e. a separate island)
-              if sum([len(r.members) for r in nbor.potential_regions-{region}]) + shell + len(region.members) < region.size: # if this region can annex all regions adjacent to *nbor* w/o violating its size
-                next_open.add(nbor)
-            elif nbor.color==1:   # Assuming that the region has already expanded over an unknown cell on the border, and thus checked that this white cell is OK to expand into
-              next_open.add(nbor)
-
+      next_open = {}
+      for cell, min_req_size in open_layer.items():
+        for nbor in [n for n in self.neighbors(cell) if n not in set(next_open)|set(open_layer)|used]:    # nbors that haven't already been accounted for
+          if nbor.color==0 and all([r.size is None for r in nbor.potential_regions-{region}]):  # if nbor isn't adjacent to any other regions with defined size (i.e. a separate island)
+            connected_cells = {cell for r in nbor.potential_regions-{region} for cell in r.members}|{nbor}
+            if len(connected_cells) + min_req_size <= region.size:                          # if this region can annex all regions adjacent to *nbor* w/o violating its size
+              next_open.update({cell:min_req_size+len(connected_cells) for cell in connected_cells})
       used.update(open_layer)
-      return self.find_reach_white(region, next_open, used, shell+1, depth_limit)
+      return self.find_reach_white(region, next_open, used, depth+1, depth_limit)
 
 
   # INFERENCES
@@ -199,6 +193,7 @@ class Board:
     return False
 
   # put black squres around finished islands
+  # made redundant by find_unreachable
   def surround_islands(self):
     for region in self.white_regions:
       if region.size is not None and region.size == len(region.members):
@@ -211,7 +206,7 @@ class Board:
   def find_unreachable(self):
     reachable = set()
     for region in [r for r in self.white_regions if r.size is not None]:
-      reachable.update(self.find_reach_white(region, depth_limit=region.size-len(region.members)))
+      reachable.update(self.find_reach_white(region))
     for cell in set(self.cells.values())-reachable:
       if cell.color == 0:
         self.set_color(cell, 2)

@@ -58,7 +58,7 @@ def test_is_solved_false(GRID_1):
 def test_find_reach_white(GRID_2):
     result = {(1,4), (2,3), (2,4), (3,2), (3,3), (3,4), (4,3)}
     region = [r for r in GRID_2.white_regions if r.size == 3][0] #the only region of size 3
-    assert {(cell.x,cell.y) for cell in GRID_2.find_reach_white(region, depth_limit=region.size-1)} == result, "find_reach_white failed"
+    assert {cell.coords for cell in GRID_2.find_reach_white(region)} == result, "find_reach_white failed"
 
 
 def test_find_unreachable(GRID_1, SOL_1):
