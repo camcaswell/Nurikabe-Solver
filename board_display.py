@@ -58,7 +58,8 @@ class Board_Display:
 
 
 def show_board(board, title):
-    th = threading.Thread(target=_show_board, args=(board, title))
+    board_copy = board.copy()
+    th = threading.Thread(target=_show_board, args=(board_copy, title))
     th.start()
 
 def _show_board(board, title):
