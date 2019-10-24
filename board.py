@@ -12,7 +12,6 @@ class Cell:
     self.region = None
     self.potential_regions = set()  # Unknown cells next to a white region are either part of that region or black. Multiple regions can be adjacent without knowing whether they're the same region.
 
-
   def __repr__(self):
     #return f'C[{self.x},{self.y}]-{self.color}-{int(bool(self.region))}'
     return f'C<{self.x},{self.y}>'
@@ -28,8 +27,17 @@ class Region:
     self.members = [firstMember]
     firstMember.region = self
 
+    if self.is_master():
+      self.remote_parts = set()   #It's possible to know that a white region is part of an island without knowing how they're connected. They are modeled as separate regions: the master and the remote part.
+
   def __repr__(self):
     return f'<R:{self.color}:{self.size} {sorted(self.members)}>'
+
+  def is_done(self):
+    return self.size == len(self.members)
+
+  def is_master(self):
+    return not self.size is None
 
 
 class Board:
@@ -90,11 +98,11 @@ class Board:
 
   def annex(self, region1, region2):
     # merges region2 into region 1
-    assert region1.size is None or region2.size is None, "Cannot merge two regions with defined sizes."
+    assert not region1.is_master() or not region2.is_master(), "Cannot merge two regions with defined sizes."
     assert region2.color == region2.color, "Cannot merge two regions of different colors."
 
     region1.members += region2.members
-    if region2.size is not None:
+    if region2.is_master():
       region1.size = region2.size
     for cell in region2.members:
       cell.region = region1
@@ -196,7 +204,7 @@ class Board:
   # made redundant by find_unreachable
   def surround_islands(self):
     for region in self.white_regions:
-      if region.size is not None and region.size == len(region.members):
+      if region.is_master() and region.size == len(region.members):
         for cell in region.members:
           for nbor in self.neighbors(cell):
             if nbor.color == 0:
@@ -205,7 +213,7 @@ class Board:
   # set all cells that can't be reached by any islands to black 
   def find_unreachable(self):
     reachable = set()
-    for region in [r for r in self.white_regions if r.size is not None]:
+    for region in [r for r in self.white_regions if r.is_master()]:
       reachable.update(self.find_reach_white(region))
     for cell in set(self.cells.values())-reachable:
       if cell.color == 0:
