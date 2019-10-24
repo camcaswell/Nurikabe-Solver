@@ -19,6 +19,9 @@ class Cell:
   def __lt__(self, other):
     return self.coords < other.coords
 
+  def tcd(self, other):
+    return abs(self.x-other.x) + abs(self.y-other.y)
+
 
 class Region:
   def __init__(self, color, firstMember, size=None):
