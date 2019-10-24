@@ -1,9 +1,11 @@
+from copy import deepcopy
 from board_display import *
 
 class Cell:
   def __init__(self, x, y, color, label=''):
     self.x = x
     self.y = y
+    self.coords = (x,y)
     self.color = color     # 0-unknown 1-white 2-black
     self.label = str(label)
     self.region = None
@@ -35,8 +37,21 @@ class Board:
     self.black_regions = set()
     self.cells = {}
 
+  def __str__(self):
+    return '\n'.join([str(row) for row in self.get_list_form()])
+
   def __eq__(self, other):
     return self.get_list_form() == other.get_list_form()
+
+  def copy(self):
+    return deepcopy(self)
+
+  def get_list_form(self):
+    return [ [self.cells[(x,y)].color for x in range(self.width)] for y in range(self.height) ]
+
+  def show(self, title="Nurikabe Board"):
+    show_board(self, title)
+    return self
 
 
   def build(self, grid):
@@ -64,15 +79,6 @@ class Board:
       for x, color in enumerate(row):
         self.cells[(x,y)] = Cell(x, y, color)
     return self
-
-  def get_list_form(self):
-    return [ [self.cells[(x,y)].color for x in range(self.width)] for y in range(self.height) ]
-
-  def __str__(self):
-    return '\n'.join([str(row) for row in self.get_list_form()])
-
-  def show(self, title="Nurikabe Board"):
-    show_board(self, title)
   
 
   def is_solved(self):
@@ -96,9 +102,10 @@ class Board:
       region1.size = region2.size
     for cell in region2.members:
       cell.region = region1
-      for nbor in [n for n in self.neighbors(cell) if n.color==0]:
-        nbor.potential_regions.discard(region2)
-        nbor.potential_regions.add(region1)
+      if region1.color == 1:
+        for nbor in [n for n in self.neighbors(cell) if n.color==0]:
+          nbor.potential_regions.discard(region2)
+          nbor.potential_regions.add(region1)
     self.white_regions.discard(region2)
     self.black_regions.discard(region2)
 
@@ -112,6 +119,8 @@ class Board:
     new_region = Region(color, cell)
     if color == 1:
       self.white_regions.add(new_region)
+      for nbor in [nbor for nbor in self.neighbors(cell) if nbor.color == 0]:
+        nbor.potential_regions.add(new_region)
     else:
       self.black_regions.add(new_region)
     cell.region = new_region
@@ -119,14 +128,8 @@ class Board:
     if color == 1:
       cell.label = u"\u22C5"    # dot operator
     for nbor_region in {nbor.region for nbor in self.neighbors(cell) if nbor.region is not None and nbor.color == color}:
-      try:
-        self.annex(new_region, nbor_region)
-      except Exception as err:
-        self.show("Failed to annex")
-        print("\nFailed to annex:")
-        print(new_region.members)
-        print(nbor_region.members)
-        raise
+      self.annex(new_region, nbor_region)
+
 
   
   def neighbors(self, cell, d=1, interior=False):
@@ -161,7 +164,9 @@ class Board:
       open_layer = set(region.members)
     if used is None:
       used = set()
-
+    # print(f'OL: {sorted(open_layer)}')
+    # print(f'US: {sorted(used)}')
+    # print()
     if shell >= depth_limit:
       return used|open_layer
     else:
@@ -170,21 +175,16 @@ class Board:
         for nbor in self.neighbors(cell):
           if nbor not in next_open|open_layer|used:
             if nbor.color==0 and all([r.size is None for r in nbor.potential_regions-{region}]):       # if nbor isn't adjacent to any other regions with defined size (i.e. a separate island)
-              if sum([len(r.members) for r in nbor.potential_regions-{region}]) + shell < region.size: # if this region can annex all regions adjacent to *nbor* w/o violating its size
+              if sum([len(r.members) for r in nbor.potential_regions-{region}]) + shell + len(region.members) < region.size: # if this region can annex all regions adjacent to *nbor* w/o violating its size
                 next_open.add(nbor)
             elif nbor.color==1:   # Assuming that the region has already expanded over an unknown cell on the border, and thus checked that this white cell is OK to expand into
               next_open.add(nbor)
+
       used.update(open_layer)
       return self.find_reach_white(region, next_open, used, shell+1, depth_limit)
 
 
-
-
-
-
-
-
-  # inferences
+  # INFERENCES
 
   # put black squares between distinct white regions
   # made redundant by find_unreachable
@@ -216,6 +216,13 @@ class Board:
       if cell.color == 0:
         self.set_color(cell, 2)
 
+  def prevent_pools(self):
+    for x in range(self.width-1):
+      for y in range(self.height-1):
+        nonblack = [self.cells[(x+i,y+j)] for i in (0,1) for j in (0,1) if self.cells[(x+i,y+j)].color!=2]    # The non-black cells in the square
+        if len(nonblack) == 1 and nonblack[0].color == 0:
+          self.set_color(nonblack[0], 1)
+
 
   def solve(self):
     while not self.is_solved():
@@ -242,10 +249,11 @@ if __name__ == '__main__':
         ]
     b = Board()
     b.build(grid).find_unreachable()
-    b.show()
-    # for r in b.white_regions:
-    #   print(r)
-    #   print(sorted(b.find_reach_white(r, depth_limit=r.size-1)))
-    #   print()
+    b.show(1)
+    b.prevent_pools()
+    b.show(2)
+    b.find_unreachable()
+    b.show(3)
+
 
 
