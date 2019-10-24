@@ -184,7 +184,8 @@ class Board:
           if nbor.color==0 and all([r.size is None for r in nbor.potential_regions-{region}]):  # if nbor isn't adjacent to any other regions with defined size (i.e. a separate island)
             connected_cells = {cell for r in nbor.potential_regions-{region} for cell in r.members}|{nbor}
             if len(connected_cells) + min_req_size <= region.size:                          # if this region can annex all regions adjacent to *nbor* w/o violating its size
-              next_open.update({cell:min_req_size+len(connected_cells) for cell in connected_cells})
+              for cell in connected_cells:
+                next_open[cell] = min(next_open.get(cell, INF), min_req_size+len(connected_cells))
       used.update(open_layer)
       return self.find_reach_white(region, next_open, used, depth+1, depth_limit)
 
