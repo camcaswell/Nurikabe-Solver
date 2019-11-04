@@ -5,7 +5,6 @@ class Pathtree:
         self.cell = cell
         self.parent = parent
         self.kids = set()
-        self.domain = [self]
 
     def add_kid(self, kid):
         self.kids.add(kid)
@@ -22,4 +21,10 @@ class Pathtree:
             return {self}
         else:
             return set.union(*[kid.get_leaves() for kid in self.kids])
+
+    def intersection(self):
+        return set.intersection(*[kid.intersection() for kid in self.kids])|{self}
+
+    def union(self):
+        return set.union(*[kid.union() for kid in self.kids])|{self}
 
