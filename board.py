@@ -6,11 +6,18 @@ class Cell:
   def __init__(self, x, y, color, label=''):
     self.x = x
     self.y = y
-    self.coords = (x,y)
     self.color = color     # 0-unknown 1-white 2-black
     self.label = str(label)
     self.region = None
     self.potential_regions = set()  # Unknown cells next to a white region are either part of that region or black. Multiple regions can be adjacent without knowing whether they're the same region.
+
+  @property
+  def coords(self):
+    return (self.x, self.y)
+
+  @coords.setter
+  def coords(self, coords):
+    self.x, self.y = coords
 
   def __repr__(self):
     #return f'C[{self.x},{self.y}]-{self.color}-{int(bool(self.region))}'
