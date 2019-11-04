@@ -56,6 +56,24 @@ class Region:
   def is_master(self):
     return not self.size is None
 
+  def annex(self, other):
+    # Merge *other* into *self*.
+    assert not self.is_master() or not other.is_master(), "Cannot merge two regions with defined sizes."
+    assert self.color == other.color, "Cannot merge two regions of different colors."
+
+    self.members += other.members
+    if other.is_master():
+      self.size = other.size
+    for cell in other.members:
+      cell.region = self
+      if self.color == 1:
+        for nbor in [n for n in self.board.neighbors(cell) if n.color==0]:
+          nbor.potential_regions.discard(other)
+          nbor.potential_regions.add(self)
+    self.board.white_regions.discard(other)
+    self.board.black_regions.discard(other)
+
+
 
 class Board:
   def __init__(self):
@@ -116,23 +134,6 @@ class Board:
         return False
     return True
 
-  def annex(self, region1, region2):
-    # Merge *region2* into *region1*.
-    assert not region1.is_master() or not region2.is_master(), "Cannot merge two regions with defined sizes."
-    assert region2.color == region2.color, "Cannot merge two regions of different colors."
-
-    region1.members += region2.members
-    if region2.is_master():
-      region1.size = region2.size
-    for cell in region2.members:
-      cell.region = region1
-      if region1.color == 1:
-        for nbor in [n for n in self.neighbors(cell) if n.color==0]:
-          nbor.potential_regions.discard(region2)
-          nbor.potential_regions.add(region1)
-    self.white_regions.discard(region2)
-    self.black_regions.discard(region2)
-
   def set_color(self, cell, color):
     # Set the color of a cell and annex any newly-adjacent regions.
     assert cell.color == 0, "Can only set unknown cells."
@@ -151,10 +152,9 @@ class Board:
     if color == 1:
       cell.label = u"\u22C5"    # dot operator
     for nbor_region in {nbor.region for nbor in self.neighbors(cell) if nbor.region is not None and nbor.color == color}:
-      self.annex(new_region, nbor_region)
+      new_region.annex(nbor_region)
 
 
-  
   def neighbors(self, cell, d=1, interior=False):
     # Get set of cells that are taxicab distance *d* away from *cell*.
     if d<1:
