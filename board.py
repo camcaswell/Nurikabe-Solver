@@ -31,12 +31,19 @@ class Cell:
 
 
 class Region:
-  def __init__(self, color, firstMember, size=None):
+  def __init__(self, board, color, *members, size=None):
+    assert len(members) > 0, "Cannot create Region with no members."
+    assert all([member.color == color for member in members]), "Color mismatch."
     self.color = color
     self.size = size
-    self.members = [firstMember]
-    firstMember.region = self
-
+    self.members = members
+    self.board = board
+    for member in members:
+      member.region = self
+    if color == 1:
+      board.white_regions.add(self)
+    else:
+      board.black_regions.add(self)
     if self.is_master():
       self.remote_parts = set()   #It's possible to know that a white region is part of an island without knowing how they're connected. They are modeled as separate regions: the master and the remote part.
 
@@ -83,7 +90,7 @@ class Board:
           self.cells[(x,y)] = Cell(x, y, 0)
         else:
           newCell = Cell(x, y, 1, label=size)
-          newRegion = Region(1, newCell, size)
+          newRegion = Region(self, 1, newCell, size=size)
           self.cells[(x,y)] = newCell
           self.white_regions.add(newRegion)
     for region in self.white_regions:
@@ -132,7 +139,7 @@ class Board:
     assert color in (1,2), "Can only set color to be black or white."
 
     cell.potential_regions.clear()
-    new_region = Region(color, cell)
+    new_region = Region(self, color, cell)
     if color == 1:
       self.white_regions.add(new_region)
       for nbor in [nbor for nbor in self.neighbors(cell) if nbor.color == 0]:
