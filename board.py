@@ -165,10 +165,13 @@ class Board:
       nbors.update(self.neighbors(cell, d-1, True))
     return nbors
 
-  def find_paths(self, start, end, used=[], color=None):
+  def find_paths(self, start, end, used=None, color=None):
     if color is None:
       color = start.color
-    used = used[:]
+    if used is None:
+      used = []
+    else:
+      used = used[:]
     used.append(start)
     nbors = [nbor for nbor in self.neighbors(start) if nbor not in used and nbor.color in (0,color)]
     if end in nbors:
