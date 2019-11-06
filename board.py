@@ -31,11 +31,11 @@ class Cell:
 
 
 class Region:
-  def __init__(self, board, color, *members, size=None):
+  def __init__(self, board, color, *members, size_limit=None):
     assert len(members) > 0, "Cannot create Region with no members."
     assert all([member.color == color for member in members]), "Color mismatch."
     self.color = color
-    self.size = size
+    self.size_limit = size_limit
     self.members = members
     self.board = board
     for member in members:
@@ -48,22 +48,22 @@ class Region:
       self.remote_parts = set()   #It's possible to know that a white region is part of an island without knowing how they're connected. They are modeled as separate regions: the master and the remote part.
 
   def __repr__(self):
-    return f'<R:{self.color}:{self.size} {sorted(self.members)}>'
+    return f'<R:{self.color}:{self.size_limit} {sorted(self.members)}>'
 
   def is_done(self):
-    return self.size == len(self.members)
+    return self.size_limit == len(self.members)
 
   def is_master(self):
-    return not self.size is None
+    return self.size_limit is not None
 
   def annex(self, other):
     # Merge *other* into *self*.
-    assert not self.is_master() or not other.is_master(), "Cannot merge two regions with defined sizes."
+    assert not self.is_master() or not other.is_master(), "Cannot merge two regions with defined size_limits."
     assert self.color == other.color, "Cannot merge two regions of different colors."
 
     self.members += other.members
     if other.is_master():
-      self.size = other.size
+      self.size_limit = other.size_limit
     for cell in other.members:
       cell.region = self
       if self.color == 1:
@@ -103,12 +103,12 @@ class Board:
     self.height = len(grid)
     self.width = len(grid[0])
     for y, row in enumerate(grid):
-      for x, size in enumerate(row):
-        if size == 0:
+      for x, size_limit in enumerate(row):
+        if size_limit == 0:
           self.cells[(x,y)] = Cell(x, y, 0)
         else:
-          newCell = Cell(x, y, 1, label=size)
-          newRegion = Region(self, 1, newCell, size=size)
+          newCell = Cell(x, y, 1, label=size_limit)
+          newRegion = Region(self, 1, newCell, size_limit=size_limit)
           self.cells[(x,y)] = newCell
           self.white_regions.add(newRegion)
     for region in self.white_regions:
@@ -192,7 +192,7 @@ class Board:
     if used is None:
       used = set()
     if depth_limit is None:
-      depth_limit = region.size - len(region.members)
+      depth_limit = region.size_limit - len(region.members)
     # print(f'OL: {sorted(open_layer)}')
     # print(f'US: {sorted(used)}')
     # print()
@@ -202,9 +202,9 @@ class Board:
       next_open = {}
       for cell, min_req_size in open_layer.items():
         for nbor in [n for n in self.neighbors(cell) if n not in set(next_open)|set(open_layer)|used]:    # nbors that haven't already been accounted for
-          if nbor.color==0 and all([r.size is None for r in nbor.potential_regions-{region}]):  # if nbor isn't adjacent to any other regions with defined size (i.e. a separate island)
+          if nbor.color==0 and all([r.size_limit is None for r in nbor.potential_regions-{region}]):  # if nbor isn't adjacent to any other regions with defined size_limit (i.e. a separate island)
             connected_cells = {cell for r in nbor.potential_regions-{region} for cell in r.members}|{nbor}
-            if len(connected_cells) + min_req_size <= region.size:                          # if this region can annex all regions adjacent to *nbor* w/o violating its size
+            if len(connected_cells) + min_req_size <= region.size_limit:                          # if this region can annex all regions adjacent to *nbor* w/o violating its size_limit
               for cell in connected_cells:
                 next_open[cell] = min(next_open.get(cell, INF), min_req_size+len(connected_cells))
       used.update(open_layer)
@@ -229,7 +229,7 @@ class Board:
     # Put black squares around finished islands.
     # Made redundant by find_unreachable.
     for region in self.white_regions:
-      if region.is_master() and region.size == len(region.members):
+      if region.is_done():
         for cell in region.members:
           for nbor in self.neighbors(cell):
             if nbor.color == 0:
@@ -253,7 +253,7 @@ class Board:
           self.set_color(nonblack[0], 1)
 
   def expand_white(self):
-    # Calculate all the ways that each white island can expand to their size limit, and then find any Cells that they all have in common and set those to white.
+    # Calculate all the ways that each white island can expand to their size_limit, and then find any Cells that they all have in common and set those to white.
     for region in [r for r in self.white_regions if r.is_master()]:
       expansions = self.white_expansions(region)
 
