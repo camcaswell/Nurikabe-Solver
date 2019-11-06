@@ -155,15 +155,19 @@ class Board:
       new_region.annex(nbor_region)
 
 
-  def neighbors(self, cell, d=1, interior=False):
-    # Get set of Cells that are taxicab distance *d* away from *cell*.
+  def neighbors(self, cell, d=1):
+    # Get set of Cells that are at most taxicab distance *d* away from *cell*.
+    # Exclues *cell*.
     if d<1:
       return set()
     coords = {(cell.x+(n1*(d-i)), cell.y+(n2*i)) for i in range(d+1) for n1 in (1,-1) for n2 in (1,-1)}
     nbors = {self.cells[pos] for pos in coords if 0<=pos[0]<self.width and 0<=pos[1]<self.height}
-    if interior:
-      nbors.update(self.neighbors(cell, d-1, True))
-    return nbors
+    return nbors | self.neighbors(cell, d=d-1)
+
+  def group_neighbors(self, group, d=1):
+    # Get set of Cells that are at most taxicab distance *d* away from a Cell in *group*.
+    # Excludes Cells in *group*.
+    return set.union(*[self.neighbors(cell, d=d) for cell in group]) - group
 
   def find_paths(self, start, end, used=None, color=None):
     if color is None:
@@ -218,8 +222,8 @@ class Board:
     # Made redundant by find_unreachable.
     for region in self.white_regions:
       for cell in region.members:
-        for potential_fence in [pf for pf in self.neighbors(cell, 1) if pf.color==0]:
-          for nbor in self.neighbors(potential_fence, 1):
+        for potential_fence in [pf for pf in self.neighbors(cell) if pf.color==0]:
+          for nbor in self.neighbors(potential_fence):
             if nbor.color == 1 and nbor.region != region:
               self.set_color(potential_fence, 2)
               return True
