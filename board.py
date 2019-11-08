@@ -1,6 +1,8 @@
 from copy import deepcopy
 from math import inf as INF
+
 from board_display import *
+from pathtree import *
 
 class Cell:
   def __init__(self, x, y, color, label=''):
@@ -196,28 +198,69 @@ class Board:
             {cell, self.cells[(cell.x, cell.y-1)], self.cells[(cell.x-1, cell.y)], self.cells[(cell.x-1, cell.y-1)]},
           ]
 
-  def find_paths(self, start, end, used=None, color=None):
+  def find_pathtree(self, start_unit, region=None, end_unit=None, size_limit=None, color=None):
+    if type(start_unit) is Cell:
+      start_unit = {start_unit}
+    elif type(start_unit) is Region:
+      region = start_unit
+      start_unit = start_unit.members
+    else:
+      start_unit = set(start_unit)
+
+    if type(end_unit) is Cell:
+      end_unit = {end_unit}
+    elif type(end_unit) is Region:
+      end_unit = end_unit.members
+    else:
+      end_unit = set(end_unit)
+
+    if size_limit is None:
+      if region is not None:
+        size_limit = region.size_limit
+      else:
+        size_limit = INF
+
     if color is None:
-      color = start.color
-    if used is None:
-      used = []
-    else:
-      used = used[:]
-    used.append(start)
-    nbors = [nbor for nbor in self.neighbors(start) if nbor not in used and nbor.color in (0,color)]
-    if end in nbors:
-      return [[start, end]]
-    else:
-      used += nbors
-      paths = []
-      for nbor in nbors:
-        for path in self.find_paths(nbor, end, used, color):
-          paths.append([start]+path)
-      return paths
+      color = list(start_unit[0]).color    # color of arbitrary Cell in *start_unit*
+
+    if color == 1:
+      return self._find_pathtree_white(start_unit, set(), region, end_unit, size_limit-len(start_unit))
+
+
+  def _find_pathtree_white(self, start_unit, used, region, end_unit, allowance):
+    pt = Pathtree(start_unit)
+    if start_unit&end_unit is not set() or allowance<=0:
+      return pt
+
+    used = used | start_unit
+    nbors = {nbor for nbor in self.group_neighbors(start_unit) if nbor not in used and nbor.color in (0,1)}
+    for nbor in nbors:
+      new_unit = set.union({nbor}, *[pr.members for pr in nbor.potential_regions-{region}])
+      if len(new_unit) <= allowance:
+        pt.add_kid(self._find_pathtree_white(new_unit, used, region, end_unit, allowance-len(new_unit)))
+
+    return pt
+
+  def _find_pathtree_black(self, start_unit, used, end_unit):
+    pt = Pathtree(start_unit)
+    if start_unit&end_unit is not set():
+      return pt
+
+    used = used | start_unit
+    nbors = {nbor for nbor in self.group_neighbors(start_unit) if nbor not in used}
+    for nbor in nbors:
+      if nbor.color == 1:
+        continue
+      elif nbor.color == 0 and any( [all([cell.color==2 or (cell in used) for cell in square-{nbor}]) for square in self.squares(nbor)] ):    # If it is the last unknown cell in a 2x2 square of black or already used cells
+          continue
+      pt.add_kid(self._find_pathtree_black({nbor}, used, end_unit))
+
+    return pt
 
   def find_reach_white(self, region, open_layer=None, used=None, depth=0, depth_limit=None):
     # Find the reach of *region* to *depth_limit* by adding successive shells of possible cells.
     # Returns set of all Cells that could belong to Region.
+    # Should be faster than find_pathtree().union()
     if open_layer is None:
       open_layer = {cell:len(region.members) for cell in set(region.members)}   # the *min_req_size* for *cell* is the number of cells it would take to connect *region* to *cell*, including itself and the cells already in *region*
     if used is None:
