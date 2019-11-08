@@ -157,14 +157,14 @@ class Board:
 
   def set_color(self, color, *cells):
     # Set the color of a Cell and annex any newly-adjacent Regions.
-    assert cell.color == 0, "Can only set unknown cells."
+    assert all((cell.color == 0 for cell in cells)), "Can only set unknown cells."
     assert color != 0, "Can only set color to be black or white."
 
     for cell in cells:
       cell.color = color
       cell.potential_regions.clear()
 
-    for unit in self.group(cells) 
+    for unit in self.gather(cells):
       new_region = Region(self, color, *unit)
       if color == 1:
         for cell in unit:
