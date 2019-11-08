@@ -169,6 +169,15 @@ class Board:
     # Excludes Cells in *group*.
     return set.union(*[self.neighbors(cell, d=d) for cell in group]) - group
 
+  def squares(self, cell):
+    # Return the sets of Cells that make up the four 2x2 squares that include *cell*
+    return [
+            {cell, self.cells[(cell.x, cell.y+1)], self.cells[(cell.x+1, cell.y)], self.cells[(cell.x+1, cell.y+1)]},
+            {cell, self.cells[(cell.x, cell.y+1)], self.cells[(cell.x-1, cell.y)], self.cells[(cell.x-1, cell.y+1)]},
+            {cell, self.cells[(cell.x, cell.y-1)], self.cells[(cell.x+1, cell.y)], self.cells[(cell.x+1, cell.y-1)]},
+            {cell, self.cells[(cell.x, cell.y-1)], self.cells[(cell.x-1, cell.y)], self.cells[(cell.x-1, cell.y-1)]},
+          ]
+
   def find_paths(self, start, end, used=None, color=None):
     if color is None:
       color = start.color
@@ -252,7 +261,8 @@ class Board:
     # Find any unknown Cells that are part of a 2x2 square where the other Cells are black and set them to white.
     for x in range(self.width-1):
       for y in range(self.height-1):
-        nonblack = [self.cells[(x+i,y+j)] for i in (0,1) for j in (0,1) if self.cells[(x+i,y+j)].color!=2]    # The non-black cells in the square
+        square = {cell, self.cells[(x, y+1)], self.cells[(x+1, y)], self.cells[(x+1, y+1)]}
+        nonblack = {cell for cell in square if cell.color!=2}
         if len(nonblack) == 1 and nonblack[0].color == 0:
           self.set_color(nonblack[0], 1)
 
