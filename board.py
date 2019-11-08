@@ -31,7 +31,7 @@ class Cell:
 
 
 class Region:
-  def __init__(self, board, color, *members, size_limit=None):
+  def __init__(self, board, color, *members, size_limit=INF):
     assert len(members) > 0, "Cannot create Region with no members."
     assert all([member.color == color for member in members]), "Color mismatch."
     self.color = color
@@ -54,7 +54,7 @@ class Region:
     return self.size_limit == len(self.members)
 
   def is_master(self):
-    return self.size_limit is not None
+    return self.size_limit is not INF
 
   def annex(self, other):
     # Merge *other* into *self*.
