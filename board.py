@@ -188,7 +188,7 @@ class Board:
   def group_neighbors(self, group, d=1):
     # Get set of Cells that are at most taxicab distance *d* away from a Cell in *group*.
     # Excludes Cells in *group*.
-    return set.union(*[self.neighbors(cell, d=d) for cell in group]) - group
+    return set.union(*(self.neighbors(cell, d=d) for cell in group)) - group
 
   def squares(self, cell):
     # Return the sets of Cells that make up the four 2x2 squares that include *cell*
@@ -236,7 +236,7 @@ class Board:
     used = used | start_unit
     nbors = {nbor for nbor in self.group_neighbors(start_unit) if nbor not in used and nbor.color in (0,1)}
     for nbor in nbors:
-      new_unit = set.union({nbor}, *[pr.members for pr in nbor.potential_regions-{region}])
+      new_unit = set.union({nbor}, *(pr.members for pr in nbor.potential_regions-{region}))
       if len(new_unit) <= allowance:
         pt.add_kid(self._find_pathtree_white(new_unit, used, region, end_unit, allowance-len(new_unit)))
 
