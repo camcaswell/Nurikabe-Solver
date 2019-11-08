@@ -41,6 +41,7 @@ class Region:
     self.members = members
     self.board = board
     for member in members:
+      member.potential_regions.clear()
       member.region = self
     if color == 1:
       board.white_regions.add(self)
@@ -159,16 +160,16 @@ class Board:
     assert cell.color == 0, "Can only set unknown cells."
     assert color != 0, "Can only set color to be black or white."
 
+    cell.color = color
     cell.potential_regions.clear()
     new_region = Region(self, color, cell)
+    cell.region = new_region
     if color == 1:
       self.white_regions.add(new_region)
       for nbor in [nbor for nbor in self.neighbors(cell) if nbor.color == 0]:
         nbor.potential_regions.add(new_region)
     else:
       self.black_regions.add(new_region)
-    cell.region = new_region
-    cell.color = color
     if color == 1:
       cell.label = u"\u22C5"    # dot operator
     for nbor_region in {nbor.region for nbor in self.neighbors(cell) if nbor.region is not None and nbor.color == color}:
@@ -276,7 +277,7 @@ class Board:
       next_open = {}
       for cell, min_req_size in open_layer.items():
         for nbor in [n for n in self.neighbors(cell) if n not in set(next_open)|set(open_layer)|used]:    # nbors that haven't already been accounted for
-          if nbor.color==0 and all([r.size_limit is None for r in nbor.potential_regions-{region}]):  # if nbor isn't adjacent to any other regions with defined size_limit (i.e. a separate island)
+          if nbor.color==0 and not any([r.is_master() for r in nbor.potential_regions-{region}]):  # if nbor isn't adjacent to any other regions with defined size_limit (i.e. a separate island)
             connected_cells = {cell for r in nbor.potential_regions-{region} for cell in r.members}|{nbor}
             if len(connected_cells) + min_req_size <= region.size_limit:                          # if this region can annex all regions adjacent to *nbor* w/o violating its size_limit
               for cell in connected_cells:
@@ -332,8 +333,8 @@ class Board:
     # Find any unknown Cells that are part of a 2x2 square where the other Cells are black and set them to white.
     for x in range(self.width-1):
       for y in range(self.height-1):
-        square = {cell, self.cells[(x, y+1)], self.cells[(x+1, y)], self.cells[(x+1, y+1)]}
-        nonblack = {cell for cell in square if cell.color!=2}
+        square = {self.cells[(x, y)], self.cells[(x, y+1)], self.cells[(x+1, y)], self.cells[(x+1, y+1)]}
+        nonblack = [cell for cell in square if cell.color!=2]
         if len(nonblack) == 1 and nonblack[0].color == 0:
           self.set_color(nonblack[0], 1)
 
