@@ -75,6 +75,12 @@ class Region:
 
 
 
+
+
+
+
+
+
 class Board:
   def __init__(self):
     self.white_regions = set()
@@ -133,6 +139,18 @@ class Board:
       if cell.color == 0:
         return False
     return True
+
+
+
+
+
+
+
+
+
+
+
+
 
   def set_color(self, cell, color):
     # Set the color of a Cell and annex any newly-adjacent Regions.
@@ -222,6 +240,16 @@ class Board:
                 next_open[cell] = min(next_open.get(cell, INF), min_req_size+len(connected_cells))
       used.update(open_layer)
       return self.find_reach_white(region, next_open, used, depth+1, depth_limit)
+
+
+
+
+
+
+
+
+
+
 
 
   # INFERENCES
