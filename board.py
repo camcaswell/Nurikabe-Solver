@@ -258,6 +258,28 @@ class Board:
 
     return pt
 
+    def gather(self, collection):
+      # Group a set of cells into contiguous sets
+      collection = list(collection)
+      c_sets = []
+      while collection:
+        c_set = set()
+        to_process = {collection.pop()}
+        while to_process:
+          current = to_process.pop()
+          c_set.add(current)
+          for nbor in [n for n in self.neighbors(current) if n in collection]:
+            to_process.add(nbor)
+        c_sets.append(c_set)
+      return c_sets
+
+
+
+
+
+
+
+
   def find_reach_white(self, region, open_layer=None, used=None, depth=0, depth_limit=None):
     # Find the reach of *region* to *depth_limit* by adding successive shells of possible cells.
     # Returns set of all Cells that could belong to Region.
