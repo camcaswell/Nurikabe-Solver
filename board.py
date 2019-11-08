@@ -155,26 +155,29 @@ class Board:
 
 
 
-  def set_color(self, cell, color):
+  def set_color(self, color, *cells):
     # Set the color of a Cell and annex any newly-adjacent Regions.
     assert cell.color == 0, "Can only set unknown cells."
     assert color != 0, "Can only set color to be black or white."
 
-    cell.color = color
-    cell.potential_regions.clear()
-    new_region = Region(self, color, cell)
-    cell.region = new_region
-    if color == 1:
-      self.white_regions.add(new_region)
-      for nbor in [nbor for nbor in self.neighbors(cell) if nbor.color == 0]:
-        nbor.potential_regions.add(new_region)
-    else:
-      self.black_regions.add(new_region)
-    if color == 1:
-      cell.label = u"\u22C5"    # dot operator
-    for nbor_region in {nbor.region for nbor in self.neighbors(cell) if nbor.region is not None and nbor.color == color}:
-      new_region.annex(nbor_region)
+    for cell in cells:
+      cell.color = color
+      cell.potential_regions.clear()
 
+    for unit in self.group(cells) 
+      new_region = Region(self, color, *unit)
+      if color == 1:
+        for cell in unit:
+          cell.label = u"\u22C5" # dot operator
+        self.white_regions.add(new_region)
+        for nbor in self.group_neighbors(unit):
+          if nbor.color == 0:
+            nbor.potential_regions.add(new_region)
+      else:
+        self.black_regions.add(new_region)
+      for nbor in self.group_neighbors(unit):
+        if nbor.region is not None and nbor.color == color:
+          new_region.annex(nbor.region)
 
   def neighbors(self, cell, d=1):
     # Get set of Cells that are at most taxicab distance *d* away from *cell*.
@@ -274,12 +277,6 @@ class Board:
       return c_sets
 
 
-
-
-
-
-
-
   def find_reach_white(self, region, open_layer=None, used=None, depth=0, depth_limit=None):
     # Find the reach of *region* to *depth_limit* by adding successive shells of possible cells.
     # Returns set of all Cells that could belong to Region.
@@ -328,7 +325,7 @@ class Board:
         for potential_fence in [pf for pf in self.neighbors(cell) if pf.color==0]:
           for nbor in self.neighbors(potential_fence):
             if nbor.color == 1 and nbor.region != region:
-              self.set_color(potential_fence, 2)
+              self.set_color(2, potential_fence)
               return True
     return False
 
@@ -340,7 +337,7 @@ class Board:
         for cell in region.members:
           for nbor in self.neighbors(cell):
             if nbor.color == 0:
-              self.set_color(nbor, 2)
+              self.set_color(2, nbor)
 
   def find_unreachable(self):
     # Set all Cells that can't be reached by any islands to black.
@@ -349,7 +346,7 @@ class Board:
       reachable.update(self.find_reach_white(region))
     for cell in set(self.cells.values())-reachable:
       if cell.color == 0:
-        self.set_color(cell, 2)
+        self.set_color(2, cell)
 
   def prevent_pools(self):
     # Find any unknown Cells that are part of a 2x2 square where the other Cells are black and set them to white.
@@ -358,7 +355,7 @@ class Board:
         square = {self.cells[(x, y)], self.cells[(x, y+1)], self.cells[(x+1, y)], self.cells[(x+1, y+1)]}
         nonblack = [cell for cell in square if cell.color!=2]
         if len(nonblack) == 1 and nonblack[0].color == 0:
-          self.set_color(nonblack[0], 1)
+          self.set_color(1, nonblack[0])
 
   def expand_white(self):
     # Calculate all the ways that each white island can expand to their size_limit, and then find any Cells that they all have in common and set those to white.
