@@ -17,9 +17,6 @@ class Pathtree:
         return self
 
 
-
-    # These methods work on the level of the unit/node, NOT on the level of cells
-
     def get_path(self):
         # Return path from root to here
         if parent is None:
