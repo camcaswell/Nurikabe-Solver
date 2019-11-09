@@ -34,10 +34,10 @@ class Pathtree:
             return set.union(*[kid.get_leaves() for kid in self.kids])
 
     def intersection(self):
-        return set.intersection(*[kid.intersection() for kid in self.kids])|{self}
+        return set.intersection(*[kid.intersection() for kid in self.kids])|self.unit
 
     def union(self):
-        return set.union(*[kid.union() for kid in self.kids])|{self}
+        return set.union(*[kid.union() for kid in self.kids])|self.unit
 
     def expansions(self):
         return {set.union(*(node.unit for node in leaf.get_path())) for leaf in self.get_leaves()}

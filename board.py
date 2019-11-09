@@ -361,7 +361,7 @@ class Board:
     # Calculate all the ways that each white island can expand to their size_limit, and then find any Cells that they all have in common and set those to white.
     for region in [r for r in self.white_regions if r.is_master()]:
       pt = self.find_pathtree(region.members, region=region)
-      self.set_color(1, *(node.unit for node in pt.intersection()))
+      self.set_color(1, *pt.intersection())
 
 
   def solve(self):
