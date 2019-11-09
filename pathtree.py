@@ -39,3 +39,5 @@ class Pathtree:
     def union(self):
         return set.union(*[kid.union() for kid in self.kids])|{self}
 
+    def expansions(self):
+        return {set.union(*(node.unit for node in leaf.get_path())) for leaf in self.get_leaves()}
