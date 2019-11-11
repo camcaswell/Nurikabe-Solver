@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
 from math import sqrt
+from json import dump
 
 def download_puzzles(count=5, size=5, difficulty='Normal'):
 
@@ -54,3 +55,10 @@ def download_puzzles(count=5, size=5, difficulty='Normal'):
                 board_list.append(board_row)
             board_lists.append(board_list)
     return board_lists
+
+def save_puzzle_cases(count=5, size=5, difficulty='Normal'):
+    with open('puzzles.json', 'w') as write_file:
+        dump(download_puzzles(count, size, difficulty), write_file)
+
+if __name__ == '__main__':
+    save_puzzle_cases(size=10, difficulty='Hard')
