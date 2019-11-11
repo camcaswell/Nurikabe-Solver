@@ -6,3 +6,5 @@ test\.py
 TODO.txt
 
 *.log
+
+puzzles.json
