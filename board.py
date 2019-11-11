@@ -85,10 +85,15 @@ class Region:
 
 
 class Board:
-  def __init__(self):
+  def __init__(self, board_list=None, manual_list=None):
     self.white_regions = set()
     self.black_regions = set()
     self.cells = {}
+
+    if board_list is not None:
+      self.build(board_list)
+    elif manual_list is not None:
+      self.manual_build(manual_list)
 
   def __str__(self):
     return '\n'.join([str(row) for row in self.get_list_form()])
@@ -312,9 +317,6 @@ class Board:
 
 
 
-
-
-
   # INFERENCES
 
   def create_fences(self):
@@ -387,8 +389,9 @@ if __name__ == '__main__':
           [0, 0, 0, 0, 1],
           [3, 0, 0, 0, 0]
         ]
-    b = Board()
-    b.build(grid).find_unreachable()
+    b = Board(grid)
+
+    b.find_unreachable()
     b.show(1)
     b.prevent_pools()
     b.show(2)

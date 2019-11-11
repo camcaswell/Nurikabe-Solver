@@ -7,8 +7,7 @@ def BOARD():
 
 @ pytest.fixture
 def GRID_1():
-    b = Board()
-    b.build(
+    b = Board(
                 [
                     [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0],
@@ -21,8 +20,7 @@ def GRID_1():
 
 @pytest.fixture
 def SOL_1():
-    b = Board()
-    b.manual_build(
+    b = Board(manual_list=
                     [
                         [2, 2, 2, 2, 2],
                         [2, 1, 2, 1, 2],
@@ -35,8 +33,7 @@ def SOL_1():
 
 @pytest.fixture
 def GRID_2():
-    b = Board()
-    b.build(
+    b = Board(
                 [
                     [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0],
