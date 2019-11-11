@@ -47,9 +47,9 @@ def download_puzzles(count=5, size=5, difficulty='Normal'):
                 board_row = []
                 for cell_element in row:
                     if cell_element.get_attribute("class") == "cell selectable cell-off":
-                        board_row.append('0')
+                        board_row.append(0)
                     elif cell_element.get_attribute("class") == "nurikabe-task-cell cell-off":
-                        board_row.append(cell_element.get_attribute("innerText"))
+                        board_row.append(int(cell_element.get_attribute("innerText")))
                     else:
                         raise Exception(f"Unrecognized cell element: {cell_element}")
                 board_list.append(board_row)
