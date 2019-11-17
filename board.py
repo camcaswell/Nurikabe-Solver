@@ -162,7 +162,7 @@ class Board:
 
   def set_color(self, color, *cells):
     # Set the color of a Cell and annex any newly-adjacent Regions.
-    assert all((cell.color == 0 for cell in cells)), "Can only set unknown cells."
+    assert all((cell.color == 0 for cell in cells)), f"Can only set unknown cells. {[cell for cell in cells if cell.color != 0]}"
     assert color != 0, "Can only set color to be black or white."
 
     for cell in cells:
@@ -186,7 +186,7 @@ class Board:
 
   def neighbors(self, cell, d=1):
     # Get set of Cells that are at most taxicab distance *d* away from *cell*.
-    # Exclues *cell*.
+    # Excludes *cell*.
     if d<1:
       return set()
     coords = {(cell.x+(n1*(d-i)), cell.y+(n2*i)) for i in range(d+1) for n1 in (1,-1) for n2 in (1,-1)}
@@ -292,9 +292,6 @@ class Board:
       used = set()
     if depth_limit is None:
       depth_limit = region.size_limit - len(region.members)
-    # print(f'OL: {sorted(open_layer)}')
-    # print(f'US: {sorted(used)}')
-    # print()
     if depth >= depth_limit:
       return used|set(open_layer)
     else:
@@ -362,21 +359,23 @@ class Board:
   def expand_white(self):
     # Calculate all the ways that each white island can expand to their size_limit, and then find any Cells that they all have in common and set those to white.
     for region in [r for r in self.white_regions if r.is_master()]:
-      pt = self.find_pathtree(region.members, region=region)
-      self.set_color(1, *pt.intersection())
+      intersection = set.intersection(*self.find_expansions_white(region))
+      self.set_color(1, *(intersection-region.members))
 
 
   def solve(self):
-    while not self.is_solved():
-      # apply inferences
+    cycles = 0
+    while cycles < len(self.cells)+5:
+      cycles += 1
       self.find_unreachable()
-      print("\nBREAK")
-      print(self)
-      self.find_unreachable()
+      self.prevent_pools()
+      self.expand_white()
+      if self.is_solved():
+        break
+    else:
+      print(f"Unsolved after {cycles} cycles.")
 
-      # self.surround_islands()
-      # self.create_fences()
-      break
+    print(f"Solved in {cycles} cycles.")
     return self
 
  
