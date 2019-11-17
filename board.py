@@ -38,7 +38,7 @@ class Region:
     assert all([member.color == color for member in members]), "Color mismatch."
     self.color = color
     self.size_limit = size_limit
-    self.members = members
+    self.members = set(members)
     self.board = board
     for member in members:
       member.potential_regions.clear()
@@ -64,7 +64,7 @@ class Region:
     assert not self.is_master() or not other.is_master(), "Cannot merge two regions with defined size_limits."
     assert self.color == other.color, "Cannot merge two regions of different colors."
 
-    self.members += other.members
+    self.members |= other.members
     if other.is_master():
       self.size_limit = other.size_limit
     for cell in other.members:
