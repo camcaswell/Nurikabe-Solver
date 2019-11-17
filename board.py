@@ -3,6 +3,7 @@ from math import inf as INF
 
 from board_display import *
 from pathtree import *
+from uniquequeue import UniqueQueue
 
 class Cell:
   def __init__(self, x, y, color, label=''):
@@ -263,9 +264,28 @@ class Board:
 
     return pt
 
-    def gather(self, collection):
-      # Group a set of cells into contiguous sets
-      collection = list(collection)
+  def find_expansions_white(self, region):
+    complete_exps = set()
+    partial_exps = UniqueQueue([frozenset(region.members)])
+
+    while partial_exps:
+      current = partial_exps.pop()
+      if len(current) == region.size_limit:
+        complete_exps.add(current)
+      else:
+        for nbor in self.group_neighbors(current):
+          if not any([pr.is_master() for pr in nbor.potential_regions-{region}]):
+            nbor_unit = set.union({nbor}, *(pr.members for pr in nbor.potential_regions-{region}))
+            if len(nbor_unit) + len(current) <= region.size_limit:
+              partial_exps.push(current|nbor_unit)
+
+    return [set(exp) for exp in complete_exps]
+            
+
+
+  def gather(self, collection):
+    # Group a set of cells into contiguous sets
+    collection = list(collection)
       c_sets = []
       while collection:
         c_set = set()
