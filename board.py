@@ -168,12 +168,12 @@ class Board:
     for cell in cells:
       cell.color = color
       cell.potential_regions.clear()
+      if color == 1:
+        cell.label = u"\u22C5" # dot operator
 
     for unit in self.gather(cells):
       new_region = Region(self, color, *unit)
       if color == 1:
-        for cell in unit:
-          cell.label = u"\u22C5" # dot operator
         self.white_regions.add(new_region)
         for nbor in self.group_neighbors(unit):
           if nbor.color == 0:
