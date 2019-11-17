@@ -143,10 +143,7 @@ class Board:
   
 
   def is_solved(self):
-    for cell in self.cells.values():
-      if cell.color == 0:
-        return False
-    return True
+    return all([cell.color for cell in self.cells.values()])
 
 
 
