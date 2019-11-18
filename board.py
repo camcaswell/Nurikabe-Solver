@@ -119,15 +119,23 @@ class Region:
 
 
 class Board:
+
   def __init__(self, board_list=None, manual_list=None):
     self.white_regions = OrderedSet()
     self.black_regions = OrderedSet()
     self.cells = {}
-
     if board_list is not None:
       self.build(board_list)
     elif manual_list is not None:
       self.manual_build(manual_list)
+
+  @property
+  def height(self):
+    return max([cell.y for cell in self.cells.values()])
+
+  @property
+  def width(self):
+    return max([cell.x for cell in self.cells.values()])
 
   def __str__(self):
     return '\n'.join([str(row) for row in self.get_list_form()])
@@ -161,8 +169,6 @@ class Board:
 
   def build(self, grid):
     # Build out model of a new Nurikabe board.
-    self.height = len(grid)
-    self.width = len(grid[0])
     for y, row in enumerate(grid):
       for x, size_limit in enumerate(row):
         if size_limit == 0:
@@ -181,8 +187,6 @@ class Board:
   def manual_build(self, cell_colors):
     # Use to explicitly set the colors of every cell.
     # Mostly for testing.
-    self.height = len(cell_colors)
-    self.width = len(cell_colors[0])
     for y, row in enumerate(cell_colors):
       for x, color in enumerate(row):
         self.cells[(x,y)] = Cell(x, y, color)
