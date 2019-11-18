@@ -1,8 +1,8 @@
 import tkinter as tk
 import threading
 
-WINDOW_WIDTH = 400
-WINDOW_HEIGHT = 400
+CELL_SIDE = 55
+
 WINDOW_BUFFER = 10
 LINE_WIDTH = 2
 COORDS = True
@@ -12,45 +12,43 @@ class Board_Display:
         self.master = master
         master.title(title)
 
-        canvas = tk.Canvas(master, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
-        canvas.pack()
-
         edge_buffer = WINDOW_BUFFER+LINE_WIDTH+1
         shift = edge_buffer + (20 if COORDS else 0)
+        window_side = CELL_SIDE*board.width + edge_buffer + shift
 
-        cell_width = (WINDOW_WIDTH-(edge_buffer + shift))//board.width
-        cell_height = (WINDOW_HEIGHT-(edge_buffer + shift))//board.height
+        canvas = tk.Canvas(master, width=window_side, height=window_side)
+        canvas.pack()
 
         cmap = {0:'white', 1:'white', 2:'black'}
 
         for cell in board.cells.values():
             canvas.create_rectangle(
-                                    shift + cell.x*cell_width,
-                                    shift + cell.y*cell_height,
-                                    shift + (cell.x+1)*cell_width,
-                                    shift + (cell.y+1)*cell_height,
+                                    shift + cell.x*CELL_SIDE,
+                                    shift + cell.y*CELL_SIDE,
+                                    shift + (cell.x+1)*CELL_SIDE,
+                                    shift + (cell.y+1)*CELL_SIDE,
                                     width=LINE_WIDTH,
                                     fill=cmap[cell.color],
                                 )
             if cell.label is not '':
                 canvas.create_text(
-                                    shift + (cell.x+.5)*cell_width,
-                                    shift + (cell.y+.5)*cell_height,
+                                    shift + (cell.x+.5)*CELL_SIDE,
+                                    shift + (cell.y+.5)*CELL_SIDE,
                                     text=cell.label,
-                                    font=('Arial', cell_width//3),
+                                    font=('Arial', CELL_SIDE//3),
                                 )
 
         if COORDS:
             for row in range(board.height):
                 canvas.create_text(
                                     WINDOW_BUFFER+10,
-                                    shift + (row+0.5)*cell_height,
+                                    shift + (row+0.5)*CELL_SIDE,
                                     text=str(row),
                                     font=('Arial', 10)
                                 )
             for col in range(board.width):
                 canvas.create_text(
-                                    shift + (col+0.5)*cell_width,
+                                    shift + (col+0.5)*CELL_SIDE,
                                     WINDOW_BUFFER+10,
                                     text=str(col),
                                     font=('Arial', 10)
