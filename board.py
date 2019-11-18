@@ -28,8 +28,8 @@ class Cell:
     self.x, self.y = coords
 
   def __repr__(self):
-    #return f'C[{self.x},{self.y}]-{self.color}-{int(bool(self.region))}'
-    return f'C<{self.x},{self.y}>'
+    return f'C<{self.coords}-{self.color}-{int(bool(self.region))}>'
+    #return f'C<{self.x},{self.y}>'
 
   def __lt__(self, other):
     return self.coords < other.coords
@@ -356,19 +356,19 @@ class Board:
 
 
   def gather(self, collection):
-    # Group a set of cells into contiguous sets
+    # Group a collection of cells into contiguous sets
     collection = list(collection)
-      c_sets = []
-      while collection:
-        c_set = set()
-        to_process = {collection.pop()}
-        while to_process:
-          current = to_process.pop()
-          c_set.add(current)
-          for nbor in [n for n in self.neighbors(current) if n in collection]:
-            to_process.add(nbor)
-        c_sets.append(c_set)
-      return c_sets
+    c_sets = []
+    while collection:
+      c_set = set()
+      to_process = {collection.pop()}
+      while to_process:
+        current = to_process.pop()
+        c_set.add(current)
+        for nbor in [n for n in self.neighbors(current) if n in collection]:
+          to_process.add(nbor)
+      c_sets.append(c_set)
+    return c_sets
 
 
   def find_reach_white(self, region, open_layer=None, used=None, depth=0, depth_limit=None):
@@ -483,13 +483,5 @@ if __name__ == '__main__':
           [3, 0, 0, 0, 0]
         ]
     b = Board(grid)
-
-    b.find_unreachable()
-    b.show(1)
-    b.prevent_pools()
-    b.show(2)
-    b.find_unreachable()
-    b.show(3)
-
-
-
+    
+    b.solve().show()
