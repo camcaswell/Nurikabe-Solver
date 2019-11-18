@@ -12,3 +12,5 @@ puzzles.json
 Nurikabe-Solver.sublime-project
 
 Nurikabe-Solver.sublime-workspace
+
+env/
