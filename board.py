@@ -95,6 +95,8 @@ class Region:
 
   def annex(self, other):
     # Merge *other* into *self*.
+    if self is other:
+      return
     assert not self.is_master() or not other.is_master(), "Cannot merge two regions with defined size_limits."
     assert self.color == other.color, "Cannot merge two regions of different colors."
 
