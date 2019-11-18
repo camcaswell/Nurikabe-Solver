@@ -451,10 +451,10 @@ class Board:
   def expand_white(self):
     # Calculate all the ways that each white island can expand to their size_limit, and then find any Cells that they all have in common and set those to white.
     for region in [r for r in self.white_regions if r.is_master()]:
-      intersection = set.intersection(*self.find_expansions_white(region))
-      if intersection:
-        self.set_color(1, *(intersection-region.members))
-        print(f"expand_white\t{[cell.coords for cell in intersection]}")
+      if expansions := self.find_expansions_white(region):
+        if intersection := set.intersection(*expansions):
+          self.set_color(1, *(cell for cell in intersection if cell.color==0))
+          print(f"expand_white\t{[cell.coords for cell in intersection]}")
 
 
   def solve(self):
