@@ -241,7 +241,7 @@ class Board:
       cell.color = color
       cell.potential_regions.clear()
       if color == 1:
-        cell.label = u"\u22C5" # dot operator
+        cell.label = u"\u2022" # bullet
 
     for unit in self.gather(cells):
       new_region = Region(self, color, *unit)
