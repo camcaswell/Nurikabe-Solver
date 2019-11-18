@@ -1,9 +1,13 @@
 from copy import deepcopy
 from math import inf as INF
+import json
+from ordered_set import OrderedSet
 
 from board_display import *
 from pathtree import *
 from uniquequeue import UniqueQueue
+
+LAST_BOARD_FILE = 'last_board.json'
 
 class Cell:
   def __init__(self, x, y, color, label=''):
@@ -12,7 +16,8 @@ class Cell:
     self.color = color     # 0-unknown 1-white 2-black
     self.label = str(label)
     self.region = None
-    self.potential_regions = set()  # Unknown cells next to a white region are either part of that region or black. Multiple regions can be adjacent without knowing whether they're the same region.
+    self.potential_regions = OrderedSet()  # Unknown cells next to a white region are either part of that region or black.
+                                           # Multiple regions can be adjacent without knowing whether they're the same region.
 
   @property
   def coords(self):
@@ -32,10 +37,23 @@ class Cell:
   def tcd(self, other):
     return abs(self.x-other.x) + abs(self.y-other.y)
 
+  def simple(self):
+    if self.region is None:
+      region_idx = None
+    else:
+      region_idx = self.region.get_index()
+    return {
+              'coords': self.coords,
+              'color': self.color,
+              'label': self.label,
+              'region_idx': region_idx,
+              'p_region_idxs': [region.get_index() for region in self.potential_regions]
+          }
+
+
 
 class Region:
   def __init__(self, board, color, *members, size_limit=INF):
-    assert len(members) > 0, "Cannot create Region with no members."
     assert all([member.color == color for member in members]), "Color mismatch."
     self.color = color
     self.size_limit = size_limit
@@ -59,6 +77,21 @@ class Region:
 
   def is_master(self):
     return self.size_limit is not INF
+
+  def get_index(self):
+    if self.color == 1:
+      region_idx = self.board.white_regions.index(self)
+    elif self.color == 2:
+      region_idx = self.board.black_regions.index(self)
+    else:
+      region_idx = None
+    return region_idx
+
+  def simple(self):
+    return {
+              'size_limit': self.size_limit,
+          }
+
 
   def annex(self, other):
     # Merge *other* into *self*.
@@ -87,8 +120,8 @@ class Region:
 
 class Board:
   def __init__(self, board_list=None, manual_list=None):
-    self.white_regions = set()
-    self.black_regions = set()
+    self.white_regions = OrderedSet()
+    self.black_regions = OrderedSet()
     self.cells = {}
 
     if board_list is not None:
@@ -111,6 +144,19 @@ class Board:
   def show(self, title="Nurikabe Board"):
     show_board(self, title)
     return self
+
+
+  def simple(self):
+    return {
+              'white_regions': [region.simple() for region in self.white_regions],
+              'black_regions': [region.simple() for region in self.black_regions],
+              'cells': [cell.simple() for cell in self.cells.values()]
+          }
+
+  def dump(self, filename=LAST_BOARD_FILE):
+    with open(filename, 'w') as logfile:
+      json.dump(self.simple(), logfile)
+
 
 
   def build(self, grid):
@@ -140,6 +186,28 @@ class Board:
     for y, row in enumerate(cell_colors):
       for x, color in enumerate(row):
         self.cells[(x,y)] = Cell(x, y, color)
+    return self
+
+  def rebuild(self, filename=LAST_BOARD_FILE):
+    with open(filename, 'r') as logfile:
+      jobj = json.load(logfile)
+
+    self.white_regions = OrderedSet([Region(self, 1, size_limit=region['size_limit']) for region in jobj['white_regions']])
+    self.black_regions = OrderedSet([Region(self, 2, size_limit=INF) for region in jobj['black_regions']])
+    for region in self.white_regions|self.black_regions:
+      region.board = self
+
+    for cell in jobj['cells']:
+      new_cell = Cell(*cell['coords'], cell['color'], cell['label'])
+      if cell['region_idx'] is not None:
+        if new_cell.color == 1:
+          new_cell.region = self.white_regions[cell['region_idx']]
+        elif new_cell.color == 2:
+          new_cell.region = self.black_regions[cell['region_idx']]
+        new_cell.region.members.add(new_cell)
+      new_cell.potential_regions = {self.white_regions[pri] for pri in cell['p_region_idxs']}
+      self.cells[new_cell.coords] = new_cell
+
     return self
   
 
@@ -391,6 +459,7 @@ class Board:
         break
     else:
       print(f"Unsolved after {cycles} cycles.")
+      self.dump()
 
     print(f"Solved in {cycles} cycles.")
     return self
