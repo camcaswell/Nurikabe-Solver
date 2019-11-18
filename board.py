@@ -339,6 +339,7 @@ class Board:
     return pt
 
   def find_expansions_white(self, region):
+    # Return a list of all possible expansions of *region*.
     complete_exps = set()
     partial_exps = UniqueQueue([frozenset(region.members)])
 
@@ -359,7 +360,7 @@ class Board:
 
 
   def gather(self, collection):
-    # Group a collection of cells into contiguous sets
+    # Group a collection of cells into contiguous sets.
     collection = list(collection)
     c_sets = []
     while collection:
@@ -454,9 +455,9 @@ class Board:
     # Calculate all the ways that each white island can expand to their size_limit, and then find any Cells that they all have in common and set those to white.
     for region in [r for r in self.white_regions if r.is_master()]:
       if expansions := self.find_expansions_white(region):
-        if intersection := set.intersection(*expansions):
-          self.set_color(1, *(cell for cell in intersection if cell.color==0))
-          print(f"expand_white\t{[cell.coords for cell in intersection]}")
+        if intersection := {cell for cell in set.intersection(*expansions) if cell.color==0}:
+          self.set_color(1, *(cell for cell in intersection))
+          print(f"expand_white\t\t{[cell.coords for cell in intersection]}")
 
 
   def solve(self):
@@ -471,6 +472,7 @@ class Board:
     else:
       print(f"Unsolved after {cycles} cycles.")
       self.dump()
+      return self
 
     print(f"Solved in {cycles} cycles.")
     return self
