@@ -131,11 +131,11 @@ class Board:
 
   @property
   def height(self):
-    return max([cell.y for cell in self.cells.values()])
+    return max([cell.y for cell in self.cells.values()])+1
 
   @property
   def width(self):
-    return max([cell.x for cell in self.cells.values()])
+    return max([cell.x for cell in self.cells.values()])+1
 
   def __str__(self):
     return '\n'.join([str(row) for row in self.get_list_form()])
