@@ -346,8 +346,9 @@ class Board:
         complete_exps.add(current)
       else:
         for nbor in self.group_neighbors(current):
-          if not any([pr.is_master() for pr in nbor.potential_regions-{region}]):
-            nbor_unit = set.union({nbor}, *(pr.members for pr in nbor.potential_regions-{region}))
+          potential_regions = nbor.potential_regions-{region}
+          if nbor.color != 2 and not any([pr.is_master() for pr in potential_regions]):
+            nbor_unit = set.union({nbor}, *(pr.members for pr in potential_regions))
             if len(nbor_unit) + len(current) <= region.size_limit:
               partial_exps.push(current|nbor_unit)
 
