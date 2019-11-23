@@ -128,8 +128,6 @@ class Board:
     self.cells = {}
     if board_list is not None:
       self.build(board_list)
-    elif manual_list is not None:
-      self.manual_build(manual_list)
 
   @property
   def height(self):
@@ -184,14 +182,6 @@ class Board:
       for cell in region.members:
         for nbor in [n for n in self.neighbors(cell) if n.color==0]:
           nbor.potential_regions.add(region)
-    return self
-
-  def manual_build(self, cell_colors):
-    # Use to explicitly set the colors of every cell.
-    # Mostly for testing.
-    for y, row in enumerate(cell_colors):
-      for x, color in enumerate(row):
-        self.cells[(x,y)] = Cell(x, y, color)
     return self
 
   def rebuild(self, filename=LAST_BOARD_FILE):
