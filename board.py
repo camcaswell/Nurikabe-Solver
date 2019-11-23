@@ -59,6 +59,7 @@ class Region:
     self.size_limit = size_limit
     self.members = set(members)
     self.board = board
+    self.origin = None  # set during build of the board
     for member in members:
       member.potential_regions.clear()
       member.region = self
@@ -90,6 +91,7 @@ class Region:
   def simple(self):
     return {
               'size_limit': self.size_limit,
+              'origin': self.origin
           }
 
 
@@ -176,6 +178,7 @@ class Board:
         else:
           newCell = Cell(x, y, 1, label=size_limit)
           newRegion = Region(self, 1, newCell, size_limit=size_limit)
+          newRegion.origin = (x,y)
           self.cells[(x,y)] = newCell
           self.white_regions.add(newRegion)
     for region in self.white_regions:
@@ -188,10 +191,13 @@ class Board:
     with open(filename, 'r') as logfile:
       jobj = json.load(logfile)
 
-    self.white_regions = OrderedSet([Region(self, 1, size_limit=region['size_limit']) for region in jobj['white_regions']])
-    self.black_regions = OrderedSet([Region(self, 2, size_limit=INF) for region in jobj['black_regions']])
-    for region in self.white_regions|self.black_regions:
-      region.board = self
+    self.regions = OrderedSet()
+    for region in jobj['regions']:
+      new_region = Region(self, region['color'], size_limit=region['size_limit'])
+      new_region.board = self
+      new_region.origin = region['origin']
+      self.regions.add(new_region)
+
 
     for cell in jobj['cells']:
       new_cell = Cell(*cell['coords'], cell['color'], cell['label'])
