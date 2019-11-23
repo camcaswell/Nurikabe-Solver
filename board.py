@@ -41,13 +41,13 @@ class Cell:
     if self.region is None:
       region_idx = None
     else:
-      region_idx = self.region.get_index()
+      region_idx = self.region.index
     return {
               'coords': self.coords,
               'color': self.color,
               'label': self.label,
               'region_idx': region_idx,
-              'p_region_idxs': [region.get_index() for region in self.potential_regions]
+              'p_region_idxs': [region.index for region in self.potential_regions]
           }
 
 
@@ -73,20 +73,15 @@ class Region:
   def __repr__(self):
     return f'<R:{self.color}:{self.size_limit} {sorted(self.members)}>'
 
+  @property
+  def index(self):
+    return self.board.regions.index(self)
+
   def is_done(self):
     return self.size_limit == len(self.members)
 
   def is_master(self):
     return self.size_limit is not INF
-
-  def get_index(self):
-    if self.color == 1:
-      region_idx = self.board.white_regions.index(self)
-    elif self.color == 2:
-      region_idx = self.board.black_regions.index(self)
-    else:
-      region_idx = None
-    return region_idx
 
   def simple(self):
     return {
