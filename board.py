@@ -63,10 +63,7 @@ class Region:
     for member in members:
       member.potential_regions.clear()
       member.region = self
-    if color == 1:
-      board.white_regions.add(self)
-    else:
-      board.black_regions.add(self)
+    board.regions.add(self)
     if self.is_master():
       self.remote_parts = set()   #It's possible to know that a white region is part of an island without knowing how they're connected. They are modeled as separate regions: the master and the remote part.
 
@@ -106,8 +103,7 @@ class Region:
         for nbor in [n for n in self.board.neighbors(cell) if n.color==0]:
           nbor.potential_regions.discard(other)
           nbor.potential_regions.add(self)
-    self.board.white_regions.discard(other)
-    self.board.black_regions.discard(other)
+    self.board.regions.discard(other)
 
 
 
@@ -119,9 +115,8 @@ class Region:
 
 class Board:
 
-  def __init__(self, board_list=None, manual_list=None):
-    self.white_regions = OrderedSet()
-    self.black_regions = OrderedSet()
+  def __init__(self, board_list=None):
+    self.regions = OrderedSet()
     self.cells = {}
     if board_list is not None:
       self.build(board_list)
@@ -133,6 +128,14 @@ class Board:
   @property
   def width(self):
     return max([cell.x for cell in self.cells.values()])+1
+
+  @property
+  def white_regions(self):
+    return OrderedSet([r for r in self.regions if r.color == 1])
+
+  @property
+  def black_regions(self):
+    return OrderedSet([r for r in self.regions if r.color == 2])
 
   def __str__(self):
     return '\n'.join([str(row) for row in self.get_list_form()])
@@ -153,8 +156,7 @@ class Board:
 
   def simple(self):
     return {
-              'white_regions': [region.simple() for region in self.white_regions],
-              'black_regions': [region.simple() for region in self.black_regions],
+              'regions': [region.simple() for region in self.regions],
               'cells': [cell.simple() for cell in self.cells.values()]
           }
 
@@ -175,7 +177,7 @@ class Board:
           newRegion = Region(self, 1, newCell, size_limit=size_limit)
           newRegion.origin = (x,y)
           self.cells[(x,y)] = newCell
-          self.white_regions.add(newRegion)
+          self.regions.add(newRegion)
     for region in self.white_regions:
       for cell in region.members:
         for nbor in [n for n in self.neighbors(cell) if n.color==0]:
@@ -193,16 +195,12 @@ class Board:
       new_region.origin = region['origin']
       self.regions.add(new_region)
 
-
     for cell in jobj['cells']:
       new_cell = Cell(*cell['coords'], cell['color'], cell['label'])
       if cell['region_idx'] is not None:
-        if new_cell.color == 1:
-          new_cell.region = self.white_regions[cell['region_idx']]
-        elif new_cell.color == 2:
-          new_cell.region = self.black_regions[cell['region_idx']]
+        new_cell.region = self.regions[cell['region_idx']]
         new_cell.region.members.add(new_cell)
-      new_cell.potential_regions = {self.white_regions[pri] for pri in cell['p_region_idxs']}
+      new_cell.potential_regions = {self.regions[pri] for pri in cell['p_region_idxs']}
       self.cells[new_cell.coords] = new_cell
 
     return self
@@ -236,13 +234,11 @@ class Board:
 
     for unit in self.gather(cells):
       new_region = Region(self, color, *unit)
+      self.regions.add(new_region)
       if color == 1:
-        self.white_regions.add(new_region)
         for nbor in self.group_neighbors(unit):
           if nbor.color == 0:
             nbor.potential_regions.add(new_region)
-      else:
-        self.black_regions.add(new_region)
       for nbor in self.group_neighbors(unit):
         if nbor.region is not None and nbor.color == color:
           new_region.annex(nbor.region)
