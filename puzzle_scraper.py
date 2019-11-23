@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.options import Options
 
 from math import sqrt
 from json import dump
@@ -27,9 +28,11 @@ def download_puzzles(count=5, size=5, difficulty='Normal'):
     except KeyError:
         raise ValueError("Invalid size/difficulty combination.")
 
+    options = Options()
+    options.headless = True
 
     board_lists = []
-    with webdriver.Firefox(executable_path=r'M:\\Program Files\\geckodriver.exe') as driver:
+    with webdriver.Firefox(firefox_options=options, executable_path=r'M:\\Program Files\\geckodriver.exe') as driver:
         for _ in range(count):
             driver.get(f'https://www.puzzle-nurikabe.com/{url_query}')
             board = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "board-back")))
