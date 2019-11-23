@@ -8,12 +8,15 @@ from pathtree import *
 from uniquequeue import UniqueQueue
 
 LAST_BOARD_FILE = 'last_board.json'
+unknown = 0
+white = 1
+black = 2
 
 class Cell:
   def __init__(self, x, y, color, label=''):
     self.x = x
     self.y = y
-    self.color = color     # 0-unknown 1-white 2-black
+    self.color = color
     self.label = str(label)
     self.region = None
     self.potential_regions = OrderedSet()  # Unknown cells next to a white region are either part of that region or black.
@@ -100,8 +103,8 @@ class Region:
       self.size_limit = other.size_limit
     for cell in other.members:
       cell.region = self
-      if self.color == 1:
-        for nbor in [n for n in self.board.neighbors(cell) if n.color==0]:
+      if self.color is white:
+        for nbor in [n for n in self.board.neighbors(cell) if n.color is unknown]:
           nbor.potential_regions.discard(other)
           nbor.potential_regions.add(self)
     self.board.regions.discard(other)
@@ -132,11 +135,11 @@ class Board:
 
   @property
   def white_regions(self):
-    return OrderedSet([r for r in self.regions if r.color == 1])
+    return OrderedSet([r for r in self.regions if r.color is white])
 
   @property
   def black_regions(self):
-    return OrderedSet([r for r in self.regions if r.color == 2])
+    return OrderedSet([r for r in self.regions if r.color is black])
 
   def __str__(self):
     return '\n'.join([str(row) for row in self.get_list_form()])
@@ -182,7 +185,7 @@ class Board:
           self.regions.add(newRegion)
     for region in self.white_regions:
       for cell in region.members:
-        for nbor in [n for n in self.neighbors(cell) if n.color==0]:
+        for nbor in [n for n in self.neighbors(cell) if n.color is unknown]:
           nbor.potential_regions.add(region)
     return self
 
@@ -225,21 +228,21 @@ class Board:
 
   def set_color(self, color, *cells):
     # Set the color of a Cell and annex any newly-adjacent Regions.
-    assert all((cell.color == 0 for cell in cells)), f"Can only set unknown cells. {[cell for cell in cells if cell.color != 0]}"
-    assert color != 0, "Can only set color to be black or white."
+    assert all((cell.color is unknown for cell in cells)), f"Can only set unknown cells. {[cell for cell in cells if cell.color is not unknown]}"
+    assert color is not unknown, "Can only set color to be black or white."
 
     for cell in cells:
       cell.color = color
       cell.potential_regions.clear()
-      if color == 1:
+      if color is white:
         cell.label = u"\u2022" # bullet
 
     for unit in self.gather(cells):
       new_region = Region(self, color, *unit)
       self.regions.add(new_region)
-      if color == 1:
+      if color is white:
         for nbor in self.group_neighbors(unit):
-          if nbor.color == 0:
+          if nbor.color is unknown:
             nbor.potential_regions.add(new_region)
       for nbor in self.group_neighbors(unit):
         if nbor.region is not None and nbor.color == color:
@@ -293,7 +296,7 @@ class Board:
     if color is None:
       color = list(start_unit[0]).color    # color of arbitrary Cell in *start_unit*
 
-    if color == 1:
+    if color is white:
       return self._find_pathtree_white(start_unit, set(), region, end_unit, size_limit-len(start_unit))
 
 
@@ -319,9 +322,9 @@ class Board:
     used = used | start_unit
     nbors = {nbor for nbor in self.group_neighbors(start_unit) if nbor not in used}
     for nbor in nbors:
-      if nbor.color == 1:
+      if nbor.color is white:
         continue
-      elif nbor.color == 0 and any( [all([cell.color==2 or (cell in used) for cell in square-{nbor}]) for square in self.squares(nbor)] ):    # If it is the last unknown cell in a 2x2 square of black or already used cells
+      elif nbor.color is unknown and any( [all([cell.color is black or (cell in used) for cell in square-{nbor}]) for square in self.squares(nbor)] ):    # If it is the last unknown cell in a 2x2 square of black or already used cells
           continue
       pt.add_kid(self._find_pathtree_black({nbor}, used, end_unit))
 
@@ -339,7 +342,7 @@ class Board:
       else:
         for nbor in self.group_neighbors(current):
           potential_regions = nbor.potential_regions-{region}
-          if nbor.color != 2 and not any([pr.is_master() for pr in potential_regions]):
+          if nbor.color is not black and not any([pr.is_master() for pr in potential_regions]):
             nbor_unit = set.union({nbor}, *(pr.members for pr in potential_regions))
             if len(nbor_unit) + len(current) <= region.size_limit:
               partial_exps.push(current|nbor_unit)
@@ -380,7 +383,7 @@ class Board:
       next_open = {}
       for cell, min_req_size in open_layer.items():
         for nbor in [n for n in self.neighbors(cell) if n not in set(next_open)|set(open_layer)|used]:    # nbors that haven't already been accounted for
-          if nbor.color==0 and not any([r.is_master() for r in nbor.potential_regions-{region}]):  # if nbor isn't adjacent to any other regions with defined size_limit (i.e. a separate island)
+          if nbor.color is unknown and not any([r.is_master() for r in nbor.potential_regions-{region}]):  # if nbor isn't adjacent to any other regions with defined size_limit (i.e. a separate island)
             connected_cells = {cell for r in nbor.potential_regions-{region} for cell in r.members}|{nbor}
             if len(connected_cells) + min_req_size <= region.size_limit:                          # if this region can annex all regions adjacent to *nbor* w/o violating its size_limit
               for cell in connected_cells:
@@ -403,9 +406,9 @@ class Board:
     # Made redundant by find_unreachable.
     for region in self.white_regions:
       for cell in region.members:
-        for potential_fence in [pf for pf in self.neighbors(cell) if pf.color==0]:
+        for potential_fence in [pf for pf in self.neighbors(cell) if pf.color is unknown]:
           for nbor in self.neighbors(potential_fence):
-            if nbor.color == 1 and nbor.region != region:
+            if nbor.color is white and nbor.region != region:
               self.set_color(2, potential_fence)
               print(f"create_fences\t{potential_fence.coords}\tblack")
 
@@ -416,7 +419,7 @@ class Board:
       if region.is_done():
         for cell in region.members:
           for nbor in self.neighbors(cell):
-            if nbor.color == 0:
+            if nbor.color is unknown:
               self.set_color(2, nbor)
               print(f"surround_islands\t{nbor.coords}\tblack")
 
@@ -425,7 +428,7 @@ class Board:
     reachable = set()
     for region in [r for r in self.white_regions if r.is_master()]:
       reachable.update(self.find_reach_white(region))
-    unreachable = [cell for cell in set(self.cells.values())-reachable if cell.color==0]
+    unreachable = [cell for cell in set(self.cells.values())-reachable if cell.color is unknown]
     self.set_color(2, *unreachable)
     return [cell.coords for cell in unreachable]
 
@@ -435,9 +438,9 @@ class Board:
     for x in range(self.width-1):
       for y in range(self.height-1):
         square = {self.cells[(x, y)], self.cells[(x, y+1)], self.cells[(x+1, y)], self.cells[(x+1, y+1)]}
-        nonblack = [cell for cell in square if cell.color!=2]
-        if len(nonblack) == 1 and nonblack[0].color == 0:
-          self.set_color(1, nonblack[0])
+        nonblack = [cell for cell in square if cell.color is not black]
+        if len(nonblack) == 1 and nonblack[0].color is unknown:
+          self.set_color(white, nonblack[0])
           changes.append(nonblack[0].coords)
     return changes
 
@@ -446,7 +449,7 @@ class Board:
     changes = []
     for region in [r for r in self.white_regions if r.is_master()]:
       if expansions := self.find_expansions_white(region):
-        if intersection := {cell for cell in set.intersection(*expansions) if cell.color==0}:
+        if intersection := {cell for cell in set.intersection(*expansions) if cell.color is unknown}:
           self.set_color(1, *(cell for cell in intersection))
           changes.append([cell.coords for cell in intersection])
     return changes
@@ -475,7 +478,7 @@ def main():
   grid = [
         [0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0],
-          [3, 0, 0, 2, 0],
+        [3, 0, 0, 2, 0],
         [0, 0, 0, 0, 1],
         [3, 0, 0, 0, 0]
       ]
