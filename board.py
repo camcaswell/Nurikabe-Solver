@@ -436,28 +436,31 @@ class Board:
     reachable = set()
     for region in [r for r in self.white_regions if r.is_master()]:
       reachable.update(self.find_reach_white(region))
-    for cell in set(self.cells.values())-reachable:
-      if cell.color == 0:
-        self.set_color(2, cell)
-        print(f"find_unreachable\t{cell.coords}\tblack")
+    unreachable = [cell for cell in set(self.cells.values())-reachable if cell.color==0]
+    self.set_color(2, *unreachable)
+    return [cell.coords for cell in unreachable]
 
   def prevent_pools(self):
     # Find any unknown Cells that are part of a 2x2 square where the other Cells are black and set them to white.
+    changes = []
     for x in range(self.width-1):
       for y in range(self.height-1):
         square = {self.cells[(x, y)], self.cells[(x, y+1)], self.cells[(x+1, y)], self.cells[(x+1, y+1)]}
         nonblack = [cell for cell in square if cell.color!=2]
         if len(nonblack) == 1 and nonblack[0].color == 0:
           self.set_color(1, nonblack[0])
-          print(f"prevent_pools\t\t{nonblack[0].coords}\twhite")
+          changes.append(nonblack[0].coords)
+    return changes
 
   def expand_white(self):
     # Calculate all the ways that each white island can expand to their size_limit, and then find any Cells that they all have in common and set those to white.
+    changes = []
     for region in [r for r in self.white_regions if r.is_master()]:
       if expansions := self.find_expansions_white(region):
         if intersection := {cell for cell in set.intersection(*expansions) if cell.color==0}:
           self.set_color(1, *(cell for cell in intersection))
-          print(f"expand_white\t\t{[cell.coords for cell in intersection]}")
+          changes.append([cell.coords for cell in intersection])
+    return changes
 
 
   def solve(self):
