@@ -65,7 +65,8 @@ class Region:
       member.region = self
     board.regions.add(self)
     if self.is_master():
-      self.remote_parts = set()   #It's possible to know that a white region is part of an island without knowing how they're connected. They are modeled as separate regions: the master and the remote part.
+      self.remote_parts = set()   # It's possible to know that a white region is part of an island without knowing how they're connected.
+                                  # They are modeled as separate regions: the master and the remote part.
 
   def __repr__(self):
     return f'<R:{self.color}:{self.size_limit} {sorted(self.members)}>'
@@ -163,6 +164,7 @@ class Board:
   def dump(self, filename=LAST_BOARD_FILE):
     with open(filename, 'w') as logfile:
       json.dump(self.simple(), logfile)
+    return self
 
 
 
@@ -451,9 +453,8 @@ class Board:
 
 
   def solve(self):
-    cycles = 0
-    while cycles < len(self.cells)+5:
-      cycles += 1
+    cycles = len(self.cells)+5
+    for _ in range(cycles):
       self.find_unreachable()
       self.prevent_pools()
       self.expand_white()
@@ -469,14 +470,25 @@ class Board:
 
  
 
-if __name__ == '__main__':
-    grid = [
-          [0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0],
+
+def main():
+  grid = [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
           [3, 0, 0, 2, 0],
-          [0, 0, 0, 0, 1],
-          [3, 0, 0, 0, 0]
-        ]
-    b = Board(grid)
-    
-    b.solve().show()
+        [0, 0, 0, 0, 1],
+        [3, 0, 0, 0, 0]
+      ]
+
+  with open('puzzles.json', 'r') as read_file:
+    boards = [Board(b) for b in json.loads(read_file.read())]
+
+  b = boards[0]
+  
+  b.solve().show()
+
+
+
+
+if __name__ == '__main__':
+  main()
