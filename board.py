@@ -82,7 +82,7 @@ class Region:
     return self.size_limit == len(self.members)
 
   def is_master(self):
-    return self.size_limit is not INF
+    return self.origin is not None
 
   def simple(self):
     return {
@@ -306,7 +306,7 @@ class Board:
       return pt
 
     used = used | start_unit
-    nbors = {nbor for nbor in self.group_neighbors(start_unit) if nbor not in used and nbor.color in (0,1)}
+    nbors = {nbor for nbor in self.group_neighbors(start_unit) if nbor not in used and nbor.color is not black}
     for nbor in nbors:
       new_unit = set.union({nbor}, *(pr.members for pr in nbor.potential_regions-{region}))
       if len(new_unit) <= allowance:
