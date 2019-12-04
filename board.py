@@ -367,7 +367,7 @@ class Board:
       while to_process:
         current = to_process.pop()
         c_set.add(current)
-        for nbor in [n for n in self.neighbors(current) if n in collection]:
+        for nbor in [n for n in self.neighbors(current) if n in collection and n not in c_set]:
           to_process.add(nbor)
       c_sets.append(c_set)
     return c_sets
