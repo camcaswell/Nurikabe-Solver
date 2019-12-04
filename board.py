@@ -127,11 +127,15 @@ class Board:
 
   @property
   def height(self):
-    return max([cell.y for cell in self.cells.values()])+1
+    if not self._height:
+      self._height = max([cell.y for cell in self.cells.values()])+1
+    return self._height
 
   @property
   def width(self):
-    return max([cell.x for cell in self.cells.values()])+1
+    if not self._width:
+      self._width = max([cell.x for cell in self.cells.values()])+1
+    return self._width
 
   @property
   def white_regions(self):
