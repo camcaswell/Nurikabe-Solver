@@ -119,11 +119,15 @@ class Region:
 
 class Board:
 
-  def __init__(self, board_list=None):
+  def __init__(self, board_list=None, jobj=None):
     self.regions = OrderedSet()
     self.cells = {}
+    self._width = None
+    self._height = None
     if board_list is not None:
       self.build(board_list)
+    elif jobj is not None:
+      self.rebuild(jobj)
 
   @property
   def height(self):
@@ -193,10 +197,8 @@ class Board:
           nbor.potential_regions.add(region)
     return self
 
-  def rebuild(self, filename=LAST_BOARD_FILE):
-    with open(filename, 'r') as logfile:
-      jobj = json.load(logfile)
-
+  def rebuild(self, jobj):
+    # Build out model with saved JSON object.
     self.regions = OrderedSet()
     for region in jobj['regions']:
       new_region = Region(self, region['color'], size_limit=region['size_limit'])
