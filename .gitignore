@@ -7,7 +7,7 @@ TODO.txt
 
 *.log
 
-puzzles.json
+*.json
 
 Nurikabe-Solver.sublime-project
 
@@ -15,4 +15,3 @@ Nurikabe-Solver.sublime-workspace
 
 env/
 
-last_board.json
